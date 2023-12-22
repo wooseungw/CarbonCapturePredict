@@ -7,10 +7,8 @@ from pyproj import CRS, Transformer
 def convert_crs(x, y):
     src_proj = CRS('epsg:5186')  # 원본 CRS
     dst_proj = CRS('epsg:4326')  # 타겟 CRS (WGS84)
-
     # Transformer 객체 생성
     transformer = Transformer.from_crs(src_proj, dst_proj)
-
     # 좌표 변환
     lon, lat = transformer.transform(x, y)
     return [lon, lat]
