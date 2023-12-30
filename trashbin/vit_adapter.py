@@ -10,8 +10,8 @@ from ops.modules import MSDeformAttn
 from timm.models.layers import trunc_normal_
 from torch.nn.init import normal_
 
-from vit import TIMMVisionTransformer
-from .adapter_modules import SpatialPriorModule, InteractionBlock, deform_inputs
+from trashbin.vit import TIMMVisionTransformer
+from ..adapter_modules import SpatialPriorModule, InteractionBlock, deform_inputs
 
 _logger = logging.getLogger(__name__)
 
