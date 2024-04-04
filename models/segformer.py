@@ -4,8 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-from models.segformer_utils.logger import get_root_logger
-from mmcv.runner import load_checkpoint
+#from segformer_utils.logger import get_root_logger
+import torch
+from torchprofile import profile_macs
 
 
 
@@ -320,29 +321,29 @@ class Segformer(nn.Module):
         self.dropout = nn.Dropout2d(drop_rate)
         self.linear_pred = nn.Conv2d(decoder_dim, num_classes, kernel_size=1)
 
-        self.apply(self._init_weights)
-        self.init_weights(pretrained=pretrained)
+    #     self.apply(self._init_weights)
+    #     self.init_weights(pretrained=pretrained)
         
 
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
-        elif isinstance(m, nn.Conv2d):
-            fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-            fan_out //= m.groups
-            m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
-            if m.bias is not None:
-                m.bias.data.zero_()
+    # def _init_weights(self, m):
+    #     if isinstance(m, nn.Linear):
+    #         trunc_normal_(m.weight, std=.02)
+    #         if isinstance(m, nn.Linear) and m.bias is not None:
+    #             nn.init.constant_(m.bias, 0)
+    #     elif isinstance(m, nn.LayerNorm):
+    #         nn.init.constant_(m.bias, 0)
+    #         nn.init.constant_(m.weight, 1.0)
+    #     elif isinstance(m, nn.Conv2d):
+    #         fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+    #         fan_out //= m.groups
+    #         m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+    #         if m.bias is not None:
+    #             m.bias.data.zero_()
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, map_location='cpu', strict=False, logger=logger)
+    # def init_weights(self, pretrained=None):
+    #     if isinstance(pretrained, str):
+    #         logger = get_root_logger()
+    #         load_checkpoint(self, pretrained, map_location='cpu', strict=False, logger=logger)
 
     def reset_drop_path(self, drop_path_rate):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(self.depths))]
@@ -444,3 +445,15 @@ class Segformer(nn.Module):
         x = x.type(torch.float32)
     
         return x
+if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = Segformer().to(device)
+
+    # Print the number of parameters
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Number of parameters: {num_params}")
+
+    # Print the number of FLOPs
+    input_size = torch.ones([3, 128, 128])  # Assuming input size is 3x224x224
+    flops = profile_macs(model, input_size)
+    print(f"FLOPs: {flops}")
