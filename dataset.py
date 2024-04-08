@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
 
 def get_image_paths(path):
     image_paths = []
@@ -14,7 +15,7 @@ def get_image_paths(path):
         print(path, "Done.")
     return image_paths
 
-class CustomImageDataset(Dataset):
+class CarbonDataset(Dataset):
     def __init__(self, folder_path, transform=None, mode = "Train"):
         if mode == "Valid":
             folder_path = folder_path.replace("Training",'Validation')
@@ -59,35 +60,35 @@ def imshow(tensor, title=None):
         plt.title(title)
     plt.pause(10)  # pause a bit so that plots are updated
 
-if __name__ == "__main__":
-    # Set the folder path for the dataset
-    folder_path = 'Dataset/Training/image/SN10_Forest_IMAGE'
-    transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-    # Create an instance of the CustomImageDataset class
-    dataset = CustomImageDataset(folder_path,transform=transform, mode = "Train")
+# if __name__ == "__main__":
+    # # Set the folder path for the dataset
+    # folder_path = 'Dataset/Training/image/SN10_Forest_IMAGE'
+    # transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
+    # # Create an instance of the CustomImageDataset class
+    # dataset = CarbonDataset(folder_path,transform=transform, mode = "Train")
 
-    # Create a data loader for the dataset
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    sample_index = 0
-    # Iterate over the dataset and print the images and labels
-    for images, sh, carbon, gt in dataloader:
-        sample_image, sample_sh, sample_carbon, sample_gt = dataset[sample_index]
-        print(sample_image.shape)
-        print(sample_sh.shape)
-        print(sample_carbon.shape)
-        print(sample_gt.shape)
-        import matplotlib.pyplot as plt
+    # # Create a data loader for the dataset
+    # dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    # sample_index = 0
+    # # Iterate over the dataset and print the images and labels
+    # for images, sh, carbon, gt in dataloader:
+    #     sample_image, sample_sh, sample_carbon, sample_gt = dataset[sample_index]
+    #     print(sample_image.shape)
+    #     print(sample_sh.shape)
+    #     print(sample_carbon.shape)
+    #     print(sample_gt.shape)
+    #     import matplotlib.pyplot as plt
 
-        # Select one sample from the dataset
-        sample_index += 1
-        # 시각화
-        imshow(sample_image, "Sample Image")
-        imshow(sample_sh, "Sample SH")
-        plt.imshow(sample_carbon.squeeze(), cmap='gray')
-        plt.title("sample_carbon")
-        plt.show()
+    #     # Select one sample from the dataset
+    #     sample_index += 1
+    #     # 시각화
+    #     imshow(sample_image, "Sample Image")
+    #     imshow(sample_sh, "Sample SH")
+    #     plt.imshow(sample_carbon.squeeze(), cmap='gray')
+    #     plt.title("sample_carbon")
+    #     plt.show()
 
-        # 그레이스케일 이미지는 직접 시각화 가능
-        plt.imshow(sample_gt.squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
-        plt.title("Sample GT")
-        plt.show()
+    #     # 그레이스케일 이미지는 직접 시각화 가능
+    #     plt.imshow(sample_gt.squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
+    #     plt.title("Sample GT")
+    #     plt.show()
