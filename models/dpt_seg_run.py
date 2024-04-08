@@ -11,8 +11,8 @@ import torch.nn.functional as F
 import util.io
 
 from torchvision.transforms import Compose
-from dpt.models import DPTSegmentationModel
-from dpt.transforms import Resize, NormalizeImage, PrepareForNet
+from dpt import DPTSegmentationModel
+from dpt import Resize, NormalizeImage, PrepareForNet
 
 
 def run(input_path, output_path, model_path, model_type="dpt_hybrid", optimize=True):
@@ -34,13 +34,13 @@ def run(input_path, output_path, model_path, model_type="dpt_hybrid", optimize=T
     # load network
     if model_type == "dpt_large":
         model = DPTSegmentationModel(
-            150,
+            4,
             path=model_path,
             backbone="vitl16_384",
         )
     elif model_type == "dpt_hybrid":
         model = DPTSegmentationModel(
-            150,
+            4,
             path=model_path,
             backbone="vitb_rn50_384",
         )
