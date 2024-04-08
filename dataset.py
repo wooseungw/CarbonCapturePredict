@@ -1,5 +1,4 @@
 import os
-import cv2
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -48,8 +47,10 @@ class CustomImageDataset(Dataset):
             carbon = self.transform(carbon)
             gt = self.transform(gt)
 
-        
-        return image , sh, carbon, gt
+        # Concatenate image and sh along the channel dimension
+        image_sh = torch.cat((image, sh), dim=0)
+
+        return image_sh, carbon, gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
@@ -60,7 +61,7 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'C:\Workspace\CarbonCapturePredict\Dataset\Training\image\SN10_Forest_IMAGE'
+    folder_path = 'Dataset/Training/image/SN10_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     # Create an instance of the CustomImageDataset class
     dataset = CustomImageDataset(folder_path,transform=transform, mode = "Train")
