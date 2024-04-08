@@ -40,18 +40,18 @@ checkpoint_callback_last = ModelCheckpoint(
     save_last=True,  # 마지막 에폭의 체크포인트를 저장
 )
 
-# Trainer 객체 생성
-trainer = L.Trainer(
-    logger=wandb_logger,  # Wandb 로거 사용
-    #resume_from_checkpoint=checkpoint_path, 
-    callbacks=[checkpoint_callback_min_loss, checkpoint_callback_last],  # 콜백 리스트에 추가
-    max_epochs=30,
-    
-)
+asd
 
 # device = select_device()
 # print(f"Selected device: {device}")
 def train():
+    # Trainer 객체 생성
+    trainer = L.Trainer(
+    logger=wandb_logger,  # Wandb 로거 사용
+    #resume_from_checkpoint=checkpoint_path, 
+    callbacks=[checkpoint_callback_min_loss, checkpoint_callback_last],  # 콜백 리스트에 추가
+    max_epochs=30,  # 최대 에폭 수
+    )
     model =DPTSegmentationWithCarbon()
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     fp = 'Dataset/Training/image/SN10_Forest_IMAGE'

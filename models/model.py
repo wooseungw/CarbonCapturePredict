@@ -4,7 +4,6 @@ from torch import nn
 import torch.nn.functional as F
 from torchvision import transforms
 from torch.utils.data import DataLoader
-import lightning as L
 import torchvision.models as models
 import timm
 
