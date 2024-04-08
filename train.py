@@ -6,15 +6,6 @@ from dataset import CarbonDataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import torch
-import torch.nn.functional as F
-import wandb
-
-def calculate_miou(preds, gt):
-    intersection = torch.logical_and(preds, gt).sum()
-    union = torch.logical_or(preds, gt).sum()
-    miou = intersection / union
-    return miou
-
 def select_device():
     if torch.cuda.is_available():
         return torch.device("cuda")
@@ -23,45 +14,51 @@ def select_device():
     else:
         return torch.device("cpu")
 
-device = select_device()
 
-model =DPTSegmentationWithCarbon().to(device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
-transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-fp = 'Dataset/Training/image/SN10_Forest_IMAGE'
-train_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Train',folder_path=fp), batch_size=4, shuffle=True,num_workers=8)
-val_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Valid',folder_path=fp), batch_size=4, shuffle=True,num_workers=8)
+# 이전 wandb 실행의 ID 있는 경우만
+#wandb_run_id = "YOUR_PREVIOUS_WANDB_RUN_ID"
 
+# WandbLogger 설정, 이전 실행 재개
+wandb_logger = WandbLogger(
+    project="CCP",
+    log_model="all",
+#    resume="allow",  # 이전 실행이 있으면 재개, 없으면 새 실행 시작
+#    id=wandb_run_id,  # 이전 실행 ID
+)
 
+# 체크포인트 콜백 설정
+checkpoint_callback_min_loss = ModelCheckpoint(
+    monitor='val_loss',  # 검증 손실을 모니터링
+    filename='model-{epoch:02d}-{val_loss:.2f}',
+    save_top_k=1,  # 최소 손실을 가진 상위 k개의 모델을 저장
+    mode='min',  # 'min' 모드는 손실이 최소일 때 저장
+)
 
-def _cal_loss(self, batch):
-    # 학습 단계에서의 로스 계산 및 로깅
-    x , carbon, gt = batch
-    gt_pred, carbon_pred = self(x)
-    gt_loss = F.cross_entropy(gt_pred, gt)
-    carbon_loss = F.mse_loss(carbon_pred, carbon)
-    miou = calculate_miou(gt_pred, gt)
+checkpoint_callback_last = ModelCheckpoint(
+    dirpath="checkpoints",  # 체크포인트 저장 경로
+    filename='model-{epoch:02d}-{val_loss:.2f}-last',
+    save_last=True,  # 마지막 에폭의 체크포인트를 저장
+)
+
+# Trainer 객체 생성
+trainer = L.Trainer(
+    logger=wandb_logger,  # Wandb 로거 사용
+    #resume_from_checkpoint=checkpoint_path, 
+    callbacks=[checkpoint_callback_min_loss, checkpoint_callback_last],  # 콜백 리스트에 추가
+    max_epochs=30,
     
-    return gt_loss, carbon_loss, miou
-    
-def training_step(self, batch):
+)
 
-    gt_loss, carbon_loss, miou, mse = self._cal_loss(batch)
-    self.log("train_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-    self.log("train_MSE", mse, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-    self.log("train_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-    loss = gt_loss + (carbon_loss*0.2)
-    return loss
+# device = select_device()
+# print(f"Selected device: {device}")
+def train():
+    model =DPTSegmentationWithCarbon()
+    transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
+    fp = 'Dataset/Training/image/SN10_Forest_IMAGE'
+    train_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Train',folder_path=fp), batch_size=4, shuffle=True,num_workers=8)
+    val_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Valid',folder_path=fp), batch_size=4, shuffle=True,num_workers=8)
 
-def validation_step(self, batch):
-    gt_loss, carbon_loss, miou, mse = self._cal_loss(batch)
-    self.log("Validation_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-    self.log("Validation_MSE", mse, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-    self.log("Validation_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-    loss = gt_loss + (carbon_loss*0.2)
-    return loss
-
-
-
-
-
+    # 모델 학습
+    trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
+if __name__ == "__main__":
+    train()

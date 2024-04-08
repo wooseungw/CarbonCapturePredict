@@ -953,7 +953,22 @@ class FeatureFusionBlock_custom(nn.Module):
 
         return output
 
-class BaseModel(nn.Module):
+def calculate_miou(preds, gt, num_classes):
+    miou_sum = 0.0
+    for class_index in range(num_classes):
+        pred_mask = preds == class_index
+        gt_mask = gt == class_index
+        intersection = torch.logical_and(pred_mask, gt_mask).sum()
+        union = torch.logical_or(pred_mask, gt_mask).sum()
+        # 분모가 0인 경우를 처리하기 위해 작은 epsilon 값을 추가합니다.
+        iou = intersection / (union + 1e-7)
+        miou_sum += iou
+
+    miou = miou_sum / num_classes
+    return miou
+
+
+class BaseModel(L.LightningModule):
     def load(self, path):
         """Load model from file.
 
@@ -967,6 +982,39 @@ class BaseModel(nn.Module):
 
         self.load_state_dict(parameters, strict=False)
     
+    def _cal_loss(self, batch, mode="train"):
+        # 학습 단계에서의 로스 계산 및 로깅
+        x , carbon, gt = batch
+        gt_pred, carbon_pred = self(x)
+        # 타겟 텐서가 원-핫 인코딩 형태인 경우, 클래스 인덱스 텐서로 변환
+        if gt_pred.dim() == 4:  # num_classes는 클래스 개수
+            _, gt_pred = torch.max(gt_pred, dim=1)  # 결과: (batch_size, H, W)
+
+        gt_loss = F.cross_entropy(gt_pred, gt)
+        carbon_loss = F.mse_loss(carbon_pred, carbon)
+        miou = calculate_miou(gt_pred, gt, 4)
+        
+        return gt_loss, carbon_loss, miou
+        
+    def training_step(self, batch):
+
+        gt_loss, carbon_loss, miou, mse = self._cal_loss(batch, mode="train")
+        self.log("train_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("train_MSE", mse, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("train_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        loss = gt_loss + (carbon_loss*0.2)
+        return loss
+
+    def validation_step(self, batch):
+        gt_loss, carbon_loss, miou, mse = self._cal_loss(batch, mode="val")
+        self.log("Validation_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("Validation_MSE", mse, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("Validation_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        loss = gt_loss + (carbon_loss*0.2)
+        return loss
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-3, weight_decay=1e-6)
+        return optimizer
 
 def _make_fusion_block(features, use_bn):
     return FeatureFusionBlock_custom(

@@ -36,7 +36,7 @@ class CarbonDataset(Dataset):
         image = Image.open(image_path).convert('RGB')
         
         sh_path = self.sh_paths[idx]
-        sh = Image.open(sh_path).convert('RGB')
+        sh = Image.open(sh_path).convert('L')
         carbon_path = self.carbon_paths[idx]
         carbon = Image.open(carbon_path).convert('L')
         gt_paths = self.gt_paths[idx]
