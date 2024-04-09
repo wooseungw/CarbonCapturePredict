@@ -34,13 +34,22 @@ checkpoint_callback_last = ModelCheckpoint(
     filename='model-{epoch:02d}-{val_loss:.2f}-last',
     save_last=True,  # 마지막 에폭의 체크포인트를 저장
 )
+FOLDER_PATH={
+    'Dataset\Training/image/AP10_Forest_IMAGE':7,
+    'Dataset\Training/image/AP25_Forest_IMAGE':7,
+    'Dataset\Training/image/AP10_City_IMAGE':9,
+    'Dataset\Training/image/AP25_City_IMAGE':9,
+    'Dataset/Training/image/SN10_Forest_IMAGE':4,
+}
 # device = select_device()
 # print(f"Selected device: {device}")
 def train():
+    fp = "Dataset\Training/image/AP10_Forest_IMAGE"
+    num_classes = FOLDER_PATH[fp]
     # WandbLogger 설정, 이전 실행 재개
     wandb_logger = WandbLogger(
     project="CCP",
-    log_model="all",
+    log_model="all",  # 모든 모델 아티팩트 로깅
 #    resume="allow",  # 이전 실행이 있으면 재개, 없으면 새 실행 시작
 #    id=wandb_run_id,  # 이전 실행 ID
     
@@ -48,14 +57,16 @@ def train():
     # Trainer 객체 생성
     trainer = L.Trainer(
         logger=wandb_logger,  # Wandb 로거 사용
+        log_every_n_steps=50, # 50번의 Step마다 로깅
         #resume_from_checkpoint=checkpoint_path, 
         callbacks=[checkpoint_callback_min_loss, checkpoint_callback_last],  # 콜백 리스트에 추가
         max_epochs=30,  # 최대 에폭 수
     )
-    model =DPTSegmentationWithCarbon()
+    model =DPTSegmentationWithCarbon(num_classes= num_classes,path=None)
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-    fp = 'Dataset/Training/image/SN10_Forest_IMAGE'
-    train_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Train',folder_path=fp), batch_size=16, shuffle=True,persistent_workers=True,num_workers=8)
+    
+    
+    train_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Train',folder_path=fp), batch_size=18, shuffle=True,persistent_workers=True,num_workers=8)
     val_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Valid',folder_path=fp), batch_size=32,persistent_workers=True ,num_workers=8)
 
     # 모델 학습
