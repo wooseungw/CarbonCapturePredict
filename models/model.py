@@ -6,6 +6,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 import torchvision.models as models
 import timm
+import lightning as L
 
 def calculate_miou(preds, gt):
     intersection = torch.logical_and(preds, gt).sum()

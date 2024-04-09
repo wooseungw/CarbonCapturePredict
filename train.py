@@ -39,9 +39,6 @@ checkpoint_callback_last = ModelCheckpoint(
     filename='model-{epoch:02d}-{val_loss:.2f}-last',
     save_last=True,  # 마지막 에폭의 체크포인트를 저장
 )
-
-asd
-
 # device = select_device()
 # print(f"Selected device: {device}")
 def train():
@@ -55,8 +52,8 @@ def train():
     model =DPTSegmentationWithCarbon()
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     fp = 'Dataset/Training/image/SN10_Forest_IMAGE'
-    train_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Train',folder_path=fp), batch_size=4, shuffle=True,num_workers=8)
-    val_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Valid',folder_path=fp), batch_size=4, shuffle=True,num_workers=8)
+    train_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Train',folder_path=fp), batch_size=4, shuffle=True,persistent_workers=True,num_workers=8)
+    val_dataloader = DataLoader(CarbonDataset(transform=transform,mode='Valid',folder_path=fp), batch_size=4,persistent_workers=True ,num_workers=8)
 
     # 모델 학습
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)

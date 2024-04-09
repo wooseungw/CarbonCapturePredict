@@ -955,9 +955,12 @@ class FeatureFusionBlock_custom(nn.Module):
 
 def calculate_miou(preds, gt, num_classes):
     miou_sum = 0.0
+    # preds에서 최대값의 인덱스를 얻습니다. 이는 각 픽셀에 대한 예측된 클래스입니다.
+    _, preds = torch.max(preds, 1)  # 여기서 수정이 필요합니다.
+
     for class_index in range(num_classes):
-        pred_mask = preds == class_index
-        gt_mask = gt == class_index
+        pred_mask = (preds == class_index)  # 예측된 클래스 마스크
+        gt_mask = (gt == class_index)  # 실제 클래스 마스크
         intersection = torch.logical_and(pred_mask, gt_mask).sum()
         union = torch.logical_or(pred_mask, gt_mask).sum()
         # 분모가 0인 경우를 처리하기 위해 작은 epsilon 값을 추가합니다.
@@ -986,29 +989,31 @@ class BaseModel(L.LightningModule):
         # 학습 단계에서의 로스 계산 및 로깅
         x , carbon, gt = batch
         gt_pred, carbon_pred = self(x)
-        # 타겟 텐서가 원-핫 인코딩 형태인 경우, 클래스 인덱스 텐서로 변환
-        if gt_pred.dim() == 4:  # num_classes는 클래스 개수
-            _, gt_pred = torch.max(gt_pred, dim=1)  # 결과: (batch_size, H, W)
-
-        gt_loss = F.cross_entropy(gt_pred, gt)
+        criterion = nn.CrossEntropyLoss()
+        gt_loss = criterion(gt_pred, gt)
+        carbon_pred = carbon_pred.squeeze(1)
         carbon_loss = F.mse_loss(carbon_pred, carbon)
         miou = calculate_miou(gt_pred, gt, 4)
-        
+        #print("GT 예측",gt_pred.shape,"GT:" ,gt.shape)
+        #print("Carbon Pred",carbon_pred.shape,"Carbon:" ,carbon.shape)
+        #print("GT Loss",gt_loss)
+        #print("carbon Loss",carbon_loss)
+        #print("miou:",miou)
         return gt_loss, carbon_loss, miou
         
     def training_step(self, batch):
 
-        gt_loss, carbon_loss, miou, mse = self._cal_loss(batch, mode="train")
+        gt_loss, carbon_loss, miou = self._cal_loss(batch, mode="train")
         self.log("train_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log("train_MSE", mse, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("train_MSE_loss", carbon_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("train_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         loss = gt_loss + (carbon_loss*0.2)
         return loss
-
+    @torch.no_grad()
     def validation_step(self, batch):
-        gt_loss, carbon_loss, miou, mse = self._cal_loss(batch, mode="val")
+        gt_loss, carbon_loss, miou = self._cal_loss(batch, mode="val")
         self.log("Validation_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log("Validation_MSE", mse, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("train_MSE_loss", carbon_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("Validation_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         loss = gt_loss + (carbon_loss*0.2)
         return loss
@@ -1209,6 +1214,8 @@ if __name__ == "__main__":
     model = DPTSegmentationWithCarbon(
         backbone = "vitb_rn50_384"
     )
-    print(model)
-    gt, carbon =model.forward(torch.randn(12, 4, 224, 224))
-    print(gt.shape, carbon.shape)
+    #print(model)
+    
+    batch = (torch.randn(12, 4, 224, 224), torch.randn(12, 1, 224, 224), torch.randn(12, 1, 224, 224))
+    print(model.training_step(batch))
+    

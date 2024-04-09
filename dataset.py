@@ -41,17 +41,17 @@ class CarbonDataset(Dataset):
         carbon = Image.open(carbon_path).convert('L')
         gt_paths = self.gt_paths[idx]
         gt = Image.open(gt_paths).convert('L')
-
         if self.transform:
             image = self.transform(image)
             sh = self.transform(sh)
             carbon = self.transform(carbon)
             gt = self.transform(gt)
+            
 
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image_sh, carbon, gt
+        return image_sh.long() , carbon.squeeze().long() , gt.squeeze().long()
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
