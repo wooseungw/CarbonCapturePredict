@@ -1009,8 +1009,8 @@ class BaseModel(L.LightningModule):
         self.log("train_gt_loss", gt_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("train_MSE_loss", carbon_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("train_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        loss = gt_loss + (carbon_loss*0.2)
-        return loss.float()
+        loss = gt_loss.float() + (carbon_loss.float()*0.2)
+        return loss
     @torch.no_grad()
     def validation_step(self, batch):
         gt_loss, carbon_loss, miou = self._cal_loss(batch, mode="val")
