@@ -51,7 +51,7 @@ class CarbonDataset(Dataset):
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image_sh.long() , carbon.squeeze().long() , gt.squeeze().long()
+        return image_sh.to(dtype=torch.float32), carbon.squeeze().long() , gt.squeeze().long()
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
@@ -72,10 +72,10 @@ if __name__ == "__main__":
     sample_index = 0
     # Iterate over the dataset and print the images and labels
     for image_sh, carbon, gt in dataloader:
-        print(image_sh.shape)
+        print(image_sh.shape, image_sh.type())
 
-        print(carbon.shape)
-        print(gt.shape)
+        print(carbon.shape, carbon.type())
+        print(gt.shape, gt.type())
         break
         import matplotlib.pyplot as plt
 
