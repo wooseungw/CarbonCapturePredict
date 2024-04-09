@@ -1008,7 +1008,7 @@ class BaseModel(L.LightningModule):
         self.log("train_MSE_loss", carbon_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("train_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         loss = gt_loss + (carbon_loss*0.2)
-        return loss
+        return loss.float()
     @torch.no_grad()
     def validation_step(self, batch):
         gt_loss, carbon_loss, miou = self._cal_loss(batch, mode="val")
@@ -1016,7 +1016,7 @@ class BaseModel(L.LightningModule):
         self.log("train_MSE_loss", carbon_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("Validation_miou", miou, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         loss = gt_loss + (carbon_loss*0.2)
-        return loss
+        return loss.float()
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=1e-3, weight_decay=1e-6)
         return optimizer
