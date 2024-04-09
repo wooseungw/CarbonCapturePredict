@@ -991,8 +991,8 @@ class BaseModel(L.LightningModule):
         #carbon = carbon.to(dtype=torch.long)
         #gt = gt.to(dtype=torch.long)
         gt_pred, carbon_pred = self(x)
-        criterion = nn.CrossEntropyLoss()
-        gt_loss = criterion(gt_pred, gt)
+        
+        gt_loss = F.cross_entropy(gt_pred, gt)
         carbon_pred = carbon_pred.squeeze(1)
         carbon_loss = F.mse_loss(carbon_pred, carbon)
         miou = calculate_miou(gt_pred, gt, 4)
