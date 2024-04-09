@@ -22,8 +22,9 @@ def select_device():
 
 # 체크포인트 콜백 설정
 checkpoint_callback_min_loss = ModelCheckpoint(
-    monitor='val_loss',  # 검증 손실을 모니터링
-    filename='model-{epoch:02d}-{val_loss:.2f}',
+    monitor='Validation_gt_loss',  # 검증 손실을 모니터링
+    dirpath="checkpoints",  # 체크포인트 저장 경로
+    filename='model-{epoch:02d}-{Validation_gt_loss:.2f}',
     save_top_k=1,  # 최소 손실을 가진 상위 k개의 모델을 저장
     mode='min',  # 'min' 모드는 손실이 최소일 때 저장
 )
