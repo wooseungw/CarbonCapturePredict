@@ -988,6 +988,8 @@ class BaseModel(L.LightningModule):
     def _cal_loss(self, batch, mode="train"):
         # 학습 단계에서의 로스 계산 및 로깅
         x , carbon, gt = batch
+        #carbon = carbon.to(dtype=torch.long)
+        #gt = gt.to(dtype=torch.long)
         gt_pred, carbon_pred = self(x)
         criterion = nn.CrossEntropyLoss()
         gt_loss = criterion(gt_pred, gt)

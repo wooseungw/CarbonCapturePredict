@@ -51,7 +51,7 @@ class CarbonDataset(Dataset):
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image_sh.to(dtype=torch.float32), carbon.squeeze().long() , gt.squeeze().long()
+        return image_sh, carbon.squeeze() , gt.squeeze()
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
