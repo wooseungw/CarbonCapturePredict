@@ -254,7 +254,7 @@ if __name__ == "__main__":
         'num_layers': 2,
         'channels': 3,
         'decoder_dim': 256,
-        'num_classes': 19
+        'num_classes': 4
     }
     model = Segformer(**args)
     model.eval()
@@ -266,3 +266,4 @@ if __name__ == "__main__":
     print(output.shape)
     flops = profile_macs(model, input_tensor)
     print(f"FLOPs: {flops}")
+    

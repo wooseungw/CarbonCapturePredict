@@ -12,11 +12,12 @@ def get_image_paths(path):
         if filename.endswith('.tif') or filename.endswith('.png'):
             image_paths.append(os.path.join(path, filename))
     if len(image_paths) != 0:
-        print(path, "Done.")
+        print(path, "Done.",end='/')
+    print()
     return image_paths
 
 class CarbonDataset(Dataset):
-    def __init__(self, folder_path, transform=None, mode = "Train"):
+    def __init__(self, folder_path, image_transform=None,sh_transform=None,label_transform=None, mode = "Train"):
         if mode == "Valid":
             folder_path = folder_path.replace("Training",'Validation')
         #이미지와 임분고 리스트 반환
@@ -26,7 +27,9 @@ class CarbonDataset(Dataset):
         folder_path = folder_path.replace("image",'label')
         self.carbon_paths = get_image_paths(folder_path.replace("IMAGE","Carbon"))
         self.gt_paths = get_image_paths(folder_path.replace("IMAGE","GT"))
-        self.transform = transform
+        self.image_transform = image_transform
+        self.sh_transform = sh_transform
+        self.label_transform = label_transform
 
     def __len__(self):
         return len(self.image_paths)
@@ -41,17 +44,21 @@ class CarbonDataset(Dataset):
         carbon = Image.open(carbon_path).convert('L')
         gt_paths = self.gt_paths[idx]
         gt = Image.open(gt_paths).convert('L')
-        if self.transform:
-            image = self.transform(image)
-            sh = self.transform(sh)
-            carbon = self.transform(carbon)
-            gt = self.transform(gt)
+        
+        if self.image_transform:
+            image = self.image_transform(image)
             
+        if self.sh_transform:
+            sh = self.sh_transform(sh)
+            
+        if self.label_transform:
+            carbon = self.label_transform(carbon)
+            gt = self.label_transform(gt)
 
         # Concatenate image and sh along the channel dimension
-        image_sh = torch.cat((image, sh), dim=0)
+        #image_sh = torch.cat((image, sh), dim=0)
 
-        return image_sh, carbon.squeeze() , gt.squeeze()
+        return image ,sh , carbon , gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))

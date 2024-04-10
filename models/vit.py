@@ -101,20 +101,25 @@ class Transpose(nn.Module):
 
 
 def forward_vit(pretrained, x):
+    # 입력 이미지의 shape 정보를 가져옴
     b, c, h, w = x.shape
 
+    # 입력 이미지를 Vision Transformer 모델에 전달하여 전역 특징을 추출함
     glob = pretrained.model.forward_flex(x)
 
+    # 각 레이어의 활성화 맵을 가져옴
     layer_1 = pretrained.activations["1"]
     layer_2 = pretrained.activations["2"]
     layer_3 = pretrained.activations["3"]
     layer_4 = pretrained.activations["4"]
 
+    # 각 레이어의 활성화 맵을 후처리 과정을 거쳐 크기를 조정함
     layer_1 = pretrained.act_postprocess1[0:2](layer_1)
     layer_2 = pretrained.act_postprocess2[0:2](layer_2)
     layer_3 = pretrained.act_postprocess3[0:2](layer_3)
     layer_4 = pretrained.act_postprocess4[0:2](layer_4)
 
+    # 크기를 조정한 활성화 맵을 다시 원래의 크기로 변환함
     unflatten = nn.Sequential(
         nn.Unflatten(
             2,
@@ -136,11 +141,13 @@ def forward_vit(pretrained, x):
     if layer_4.ndim == 3:
         layer_4 = unflatten(layer_4)
 
+    # 후처리 과정을 거친 활성화 맵을 다시 처리함
     layer_1 = pretrained.act_postprocess1[3 : len(pretrained.act_postprocess1)](layer_1)
     layer_2 = pretrained.act_postprocess2[3 : len(pretrained.act_postprocess2)](layer_2)
     layer_3 = pretrained.act_postprocess3[3 : len(pretrained.act_postprocess3)](layer_3)
     layer_4 = pretrained.act_postprocess4[3 : len(pretrained.act_postprocess4)](layer_4)
 
+    # 처리된 활성화 맵을 반환함
     return layer_1, layer_2, layer_3, layer_4
 
 
