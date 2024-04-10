@@ -8,7 +8,7 @@ class BaseModel(L.LightningModule):
     def __init__(self, num_classes=4):
         super(BaseModel, self).__init__()
         self.num_classes = num_classes
-        weight = [0.0] + [1.0] * (self.num_classes - 1)
+        weight = torch.tensor([0.0] + [1.0] * (self.num_classes - 1))
         self.seg_loss = nn.CrossEntropyLoss(weight=weight)
         self.reg_loss = nn.MSELoss()
     def load(self, path):
