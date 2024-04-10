@@ -39,12 +39,21 @@ def calculate_r2_score(tensor_true, tensor_pred):
     tensor_pred_flat = tensor_pred.view(tensor_pred.size(0), -1).cpu().detach().numpy()
     
     # 배치별 R² 점수 계산
-    r2_scores = [r2_score(true, pred) for true, pred in zip(tensor_true_flat, tensor_pred_flat)]
-    
-    if np.isnan(r2_scores).all():
-        return np.nan  # 또는 적절한 기본값 반환
-    else:
-        return np.nanmean(r2_scores)
+    r2_scores = []
+    for true, pred in zip(tensor_true_flat, tensor_pred_flat):
+        # NaN 값이나 무한대 값을 0으로 대체
+        true = np.nan_to_num(true)
+        pred = np.nan_to_num(pred)
+        
+        # 표준편차가 0이면 R² 점수 계산을 건너뜀
+        if np.std(true) == 0 or np.std(pred) == 0:
+            continue
+        
+        r2 = r2_score(true, pred)
+        r2_scores.append(r2)
+    if len(r2_scores) == 0:
+        return np.nan  # 또는 적절한 기본값
+    return np.nanmean(r2_scores)
 
 
 def fast_hist(label_true, label_pred, n_class):
