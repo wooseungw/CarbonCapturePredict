@@ -238,6 +238,57 @@ class Segformer(nn.Module):
         fused = [to_fused(output) for output, to_fused in zip(layer_outputs, self.to_fused)]
         fused = torch.cat(fused, dim=1)
         return self.to_segmentation(fused)
+    
+class Segformerwithcarbon(nn.Module):
+    def __init__(
+        self,
+        *,
+        dims=(32, 64, 160, 256),
+        heads=(1, 2, 5, 8),
+        ff_expansion=(8, 8, 4, 4),
+        reduction_ratio=(8, 4, 2, 1),
+        num_layers=2,
+        channels=3,
+        decoder_dim=256,
+        num_classes=19
+    ):
+        super().__init__()
+        dims, heads, ff_expansion, reduction_ratio, num_layers = map(
+            partial(cast_tuple, depth=4), (dims, heads, ff_expansion, reduction_ratio, num_layers))
+        assert all([*map(lambda t: len(t) == 4, (dims, heads, ff_expansion, reduction_ratio, num_layers))]), \
+            'only four stages are allowed, all keyword arguments must be either a single value or a tuple of 4 values'
+
+        self.mit = MiT(
+            channels=channels,
+            dims=dims,
+            heads=heads,
+            ff_expansion=ff_expansion,
+            reduction_ratio=reduction_ratio,
+            num_layers=num_layers
+        )
+
+        self.to_fused = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(dim, decoder_dim, 1),
+            nn.Upsample(scale_factor=2 ** i)
+        ) for i, dim in enumerate(dims)])
+
+        self.to_segmentation = nn.Sequential(
+            nn.Conv2d(4 * decoder_dim, decoder_dim, 1),
+            nn.Conv2d(decoder_dim, num_classes, 1),
+        )
+        self.to_regression = nn.Sequential(
+            nn.Conv2d(4 * decoder_dim, decoder_dim, 1),
+            nn.Conv2d(decoder_dim, 1, 1),
+        )
+
+    def forward(self, x):
+        layer_outputs = self.mit(x, return_layer_outputs=True)
+
+        fused = [to_fused(output) for output, to_fused in zip(layer_outputs, self.to_fused)]
+        fused = torch.cat(fused, dim=1)
+        gt_preds = self.to_segmentation(fused)
+        carbon_preds = self.to_regression(fused)
+        return gt_preds, carbon_preds
 '''
 데이터 흐름
 입력 이미지는 MiT 모듈을 통해 여러 스테이지에 걸쳐 처리됩니다. 각 스테이지는 이미지를 더 작은 패치로 나누고, 이 패치들을 임베딩하여 Transformer 레이어에 입력합니다.

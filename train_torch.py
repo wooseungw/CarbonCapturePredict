@@ -4,15 +4,17 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from models.segformer_simple import Segformer
+from models.segformer_simple import Segformer, Segformerwithcarbon
 from dataset import CarbonDataset
 from models.util import select_device
 from tqdm import tqdm
+from models.metrics import CarbonLoss
+from models.unet import UNet_carbon
 def main():
     # 하이퍼파라미터 설정
     FOLDER_PATH={
         'Dataset/Training/image/AP10_Forest_IMAGE':7,
-        'Dataset/Training/image/AP25_Forest_IMAGE':7,
+        'Dataset/Training/image/AP25_Forest_IMAGE':7,   
         'Dataset/Training/image/AP10_City_IMAGE':9,
         'Dataset/Training/image/AP25_City_IMAGE':9,
         'Dataset/Training/image/SN10_Forest_IMAGE':4,
@@ -30,7 +32,7 @@ def main():
     'ff_expansion': (8, 8, 4, 4),
     'reduction_ratio': (8, 4, 2, 1),
     'num_layers': 2,
-    'channels': 3,
+    'channels': 4,
     'decoder_dim': 256,
     'num_classes': FOLDER_PATH[fp]
     }
@@ -56,37 +58,39 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=8)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=8)
     # 모델 생성
-    model = Segformer(**args).to(device)    
+    model = Segformerwithcarbon(**args).to(device)    
+    #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
-    gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
+    #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
+    loss = CarbonLoss(num_classes=FOLDER_PATH[fp]).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
     glob_val_loss = 10000
     for epoch in tqdm(range(epochs)):
         model.train()
-        for x, sh , carbon, gt in tqdm(train_loader, desc="Training"):
-            #x = torch.cat((image, sh), dim=0)
-            x, sh, carbon, gt = x.to(device), sh.to(device),carbon.to(device), gt.to(device)
+        for x, carbon, gt in tqdm(train_loader, desc="Training"):
+            
+            x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             optimizer.zero_grad()
-            output = model(x)
-            gt_loss = gt_criterion(output, gt.squeeze(1).long())
-            gt_loss = gt_loss*50
-            gt_loss.backward()
+            gt_pred, carbon_pred  = model(x)
+            total_loss, cls_loss, reg_loss, acc_c, acc_r = loss(gt_pred, gt.squeeze(1).long(), carbon_pred, carbon)
+            
+            total_loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch+1}, Loss: {gt_loss.item()}")
+        print(f"Epoch {epoch+1}, Loss: {total_loss.item()}, cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
         val_total_loss = 0
         model.eval()
-        for x, sh , carbon, gt in tqdm(val_loader, desc="Validation"):
+        for  x, carbon, gt in tqdm(val_loader, desc="Validation"):
             #x = torch.cat((image, sh), dim=0)
-            x, sh, carbon, gt = x.to(device), sh.to(device),carbon.to(device), gt.to(device)
-            output = model(x)
-            gt_loss = gt_criterion(output, gt.squeeze(1).long())
-            val_total_loss += gt_loss.item()
+            x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
+            gt_pred, carbon_pred  = model(x)
+            total_loss, cls_loss, reg_loss, acc_c, acc_r = loss(gt_pred, gt.squeeze(1).long(), carbon_pred, carbon)
+            val_total_loss += total_loss.item()
         val_total_loss /= len(val_loader)  # 평균 검증 손실 계산
         if val_total_loss < glob_val_loss:
             glob_val_loss = val_total_loss
             torch.save(model.state_dict(), f"{checkpoint_path}/best_model_{epoch+1}.pth")
-        print(f"Validation Loss: {glob_val_loss}")
+        print(f"Validation Loss: {glob_val_loss}, Current Loss: {val_total_loss} , cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
 
 if __name__ =="__main__":
     

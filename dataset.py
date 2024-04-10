@@ -16,6 +16,78 @@ def get_image_paths(path):
     print()
     return image_paths
 
+class Mapping():
+    def __init__(self, folder_path):
+        if "AP10_City" in folder_path:
+            self.label_name = "AP10_City"
+            self.label_mapping={0:   0,                      
+                                110: 1,
+                                120: 2,
+                                130: 3,
+                                140: 4,
+                                210: 5,
+                                220: 6,
+                                230: 7, 
+                                190: 8,
+                                255: 0}
+        if "AP25_City" in folder_path:
+            self.label_name = "AP25_City"
+            self.label_mapping={0:   0,                      
+                                110: 1,
+                                120: 2,
+                                130: 3,
+                                140: 4,
+                                210: 5,
+                                220: 6,
+                                230: 7, 
+                                190: 8,
+                                255: 0}
+        if "AP10_Forest" in folder_path:
+            self.label_name = "AP10_Forest"
+            self.label_mapping={0:  0,                      
+                                110: 1,
+                                120: 2,
+                                130: 3,
+                                140: 4,
+                                150: 5,
+                                190: 6, 
+                                255: 0}
+        if "AP25_Forest" in folder_path:
+            self.label_name = "AP25_Forest"
+            self.label_mapping={0: 0,                      
+                                110:1,
+                                120:2,
+                                130:3,
+                                140: 4,
+                                150: 5,
+                                190: 6, 
+                                255: 0}
+        if "SN10_Forest" in folder_path:
+            self.label_name = "SN10_Forest"
+            self.label_mapping={0:  0,                      
+                                140: 1,
+                                150: 2,
+                                190: 4, 
+                                255: 0}
+    def __call__(self, img):
+        return self.gt_mapping(img)
+
+    def gt_mapping(self, img):
+        # PIL 이미지를 NumPy 배열로 변환
+        image_np = np.array(img)
+        
+        # 출력 배열 초기화 (입력 이미지와 동일한 크기)
+        mapped_image_np = np.zeros_like(image_np)
+        
+        # 라벨 매핑 적용
+        for original_label, mapped_label in self.label_mapping.items():
+            mapped_image_np[image_np == original_label] = mapped_label
+        
+        # 매핑된 NumPy 배열을 다시 PIL 이미지로 변환 (필요한 경우)
+        mapped_image = Image.fromarray(mapped_image_np)
+        
+        return mapped_image
+    
 class CarbonDataset(Dataset):
     def __init__(self, folder_path, image_transform=None,sh_transform=None,label_transform=None, mode = "Train"):
         if mode == "Valid":
@@ -30,6 +102,7 @@ class CarbonDataset(Dataset):
         self.image_transform = image_transform
         self.sh_transform = sh_transform
         self.label_transform = label_transform
+        self.Mapping = Mapping(folder_path)
 
     def __len__(self):
         return len(self.image_paths)
@@ -44,7 +117,7 @@ class CarbonDataset(Dataset):
         carbon = Image.open(carbon_path).convert('L')
         gt_paths = self.gt_paths[idx]
         gt = Image.open(gt_paths).convert('L')
-        
+        gt = self.Mapping(gt)
         if self.image_transform:
             image = self.image_transform(image)
             
@@ -56,9 +129,9 @@ class CarbonDataset(Dataset):
             gt = self.label_transform(gt)
 
         # Concatenate image and sh along the channel dimension
-        #image_sh = torch.cat((image, sh), dim=0)
+        image_sh = torch.cat((image, sh), dim=0)
 
-        return image ,sh , carbon , gt
+        return image_sh , carbon , gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
@@ -69,33 +142,30 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'Dataset/Training/image/SN10_Forest_IMAGE'
+    folder_path = 'Dataset/Training/image/AP10_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     # Create an instance of the CustomImageDataset class
-    dataset = CarbonDataset(folder_path,transform=transform, mode = "Train")
+    dataset = CarbonDataset(folder_path,transform,transform,transform, mode = "Train")
 
     # Create a data loader for the dataset
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     sample_index = 0
     # Iterate over the dataset and print the images and labels
     for image_sh, carbon, gt in dataloader:
+        for i in range(len(image_sh)):
+            print(gt[i].shape, gt[i].type())
+            plt.imshow(gt[i].squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
+            plt.title("Sample GT")
+            plt.show()
+
         print(image_sh.shape, image_sh.type())
 
         print(carbon.shape, carbon.type())
         print(gt.shape, gt.type())
-        break
+        
         import matplotlib.pyplot as plt
 
         # Select one sample from the dataset
         sample_index += 1
         # 시각화
-        imshow(sample_image, "Sample Image")
-        imshow(sample_sh, "Sample SH")
-        plt.imshow(sample_carbon.squeeze(), cmap='gray')
-        plt.title("sample_carbon")
-        plt.show()
 
-        # 그레이스케일 이미지는 직접 시각화 가능
-        plt.imshow(sample_gt.squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
-        plt.title("Sample GT")
-        plt.show()
