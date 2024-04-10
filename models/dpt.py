@@ -34,9 +34,9 @@ class DPT(BaseModel):
         channels_last=False,
         use_bn=False,
         enable_attention_hooks=False,
-        num_classes=4,
-        ):
-        super().__init__(num_classes=num_classes)
+    ):
+
+        super(DPT, self).__init__()
 
         self.channels_last = channels_last
 
@@ -156,8 +156,9 @@ class DPTSegmentationModel(DPT):
 
 class DPTSegmentationWithCarbon(DPT):
     def __init__(self, num_classes= 4, path=None, **kwargs):
-        
+
         features = kwargs["features"] if "features" in kwargs else 256
+
         kwargs["use_bn"] = True
 
         head = nn.Sequential(
@@ -168,14 +169,7 @@ class DPTSegmentationWithCarbon(DPT):
             nn.Conv2d(features, num_classes, kernel_size=1),
             Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
         )
-        # 부모 클래스의 생성자 호출, 필요한 인자 전달
-        super(DPTSegmentationWithCarbon, self).__init__(
-            head=head,
-            features=features,
-            num_classes=num_classes,
-            **kwargs  # 나머지 kwargs는 부모 클래스 생성자로 전달
-        )
-        
+        super().__init__(head, **kwargs)
         self.carbon_head = nn.Sequential(
             nn.Conv2d(features, num_classes*4, kernel_size=3, stride=1,padding=1, bias=True),
             Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
@@ -205,7 +199,7 @@ class DPTSegmentationWithCarbon(DPT):
         path_1 = self.scratch.refinenet1(path_2, layer_1_rn)
 
         out = self.scratch.output_conv(path_1)
-        carbon_out = self.carbon_head(out)
+        carbon_out = self.carbon_head(path_1)
     
         return out, carbon_out
             
