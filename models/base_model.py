@@ -2,9 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
-from .util import calculate_miou , corr_wZero , r_square_wZero
+from .util import calculate_correlation, calculate_r2_score , batch_miou
 
 class BaseModel(L.LightningModule):
+    def __init__(self, num_classes=4):
+        super(BaseModel, self).__init__()
+        self.num_classes = num_classes
+        weight = [0.0] + [1.0] * (self.num_classes - 1)
+        self.seg_loss = nn.CrossEntropyLoss(weight=weight)
+        self.reg_loss = nn.MSELoss()
     def load(self, path):
         """Load model from file.
 
@@ -17,25 +23,32 @@ class BaseModel(L.LightningModule):
             parameters = parameters["model"]
 
         self.load_state_dict(parameters, strict=False)
-    
+
     def _cal_loss(self, batch, mode="train"):
         # 학습 단계에서의 로스 계산 및 로깅
         x , carbon, gt = batch
-        #carbon = carbon.to(dtype=torch.long)
-        #gt = gt.to(dtype=torch.long)
+        # 예측결과 가져오기
         gt_pred, carbon_pred = self(x)
-        gt = gt.long()
-        gt_loss = F.cross_entropy(gt_pred, gt)
-        carbon_pred = carbon_pred.squeeze(1)
-        carbon_loss = F.mse_loss(carbon_pred, carbon)
-        miou = calculate_miou(gt_pred, gt, 4)
-        corr = corr_wZero(gt_pred,gt)
-        r2 = r_square_wZero(carbon_pred,carbon)
         # print("GT 예측",gt_pred.shape,"GT:" ,gt.shape)
         # print("Carbon Pred",carbon_pred.shape,"Carbon:" ,carbon.shape)
+        gt = gt.long()
+        # 로스 계산
+        gt_loss = self.seg_loss(gt_pred, gt)
+        carbon_pred = carbon_pred.squeeze(1)
+        carbon_loss = self.reg_loss(carbon_pred, carbon)
         # print("GT Loss",gt_loss)
         # print("carbon Loss",carbon_loss)
+        # 평가지표 계산
+        gt_pred = torch.argmax(gt_pred, dim=1)
+        # print("평가지표 GT 예측",gt_pred.shape,"GT:" ,gt.shape)
+        # print("평가지표 Carbon Pred",carbon_pred.shape,"Carbon:" ,carbon.shape)
+        miou = batch_miou(gt_pred, gt, num_class=self.num_classes)
+        corr = calculate_correlation(gt_pred,gt)
+        r2 = calculate_r2_score(carbon_pred,carbon)
         # print("miou:",miou)
+        # print("corr:",corr)
+        # print("r2:",r2)
+
         return gt_loss, carbon_loss, miou , corr, r2
         
     def training_step(self, batch):
@@ -61,5 +74,5 @@ class BaseModel(L.LightningModule):
         return loss.float()
     
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-4, weight_decay=1e-6)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-5, weight_decay=1e-6)
         return optimizer
