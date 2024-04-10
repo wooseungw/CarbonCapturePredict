@@ -29,14 +29,16 @@ class DPT(BaseModel):
         self,
         head,
         features=256,
+        num_classes=4,
         backbone="vitb_rn50_384",
         readout="project",
         channels_last=False,
         use_bn=False,
         enable_attention_hooks=False,
-    ):
-
-        super(DPT, self).__init__()
+        **kwargs
+        ):
+        #print("DPT num_classes",num_classes)
+        super(DPT, self).__init__(num_classes)
 
         self.channels_last = channels_last
 
@@ -158,9 +160,10 @@ class DPTSegmentationWithCarbon(DPT):
     def __init__(self, num_classes= 4, path=None, **kwargs):
 
         features = kwargs["features"] if "features" in kwargs else 256
-
+        
+        #print("SEG num_classes",num_classes)
         kwargs["use_bn"] = True
-
+        kwargs["num_classes"] = num_classes
         head = nn.Sequential(
             nn.Conv2d(features, features, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(features),

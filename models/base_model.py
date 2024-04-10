@@ -2,15 +2,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
-from .util import calculate_correlation, calculate_r2_score , batch_miou
+from .util import calculate_correlation, calculate_r2_score , batch_miou,select_device
 
 class BaseModel(L.LightningModule):
-    def __init__(self, num_classes=4):
+    def __init__(self, num_classes):
         super(BaseModel, self).__init__()
         self.num_classes = num_classes
+        #print("BASE num_classes",num_classes)
         weight = torch.tensor([0.0] + [1.0] * (self.num_classes - 1))
         self.seg_loss = nn.CrossEntropyLoss(weight=weight)
         self.reg_loss = nn.MSELoss()
+        self._device = select_device()
     def load(self, path):
         """Load model from file.
 
@@ -42,7 +44,9 @@ class BaseModel(L.LightningModule):
         gt_pred = torch.argmax(gt_pred, dim=1)
         # print("평가지표 GT 예측",gt_pred.shape,"GT:" ,gt.shape)
         # print("평가지표 Carbon Pred",carbon_pred.shape,"Carbon:" ,carbon.shape)
-        miou = batch_miou(gt_pred, gt, num_class=self.num_classes)
+        
+
+        miou = batch_miou(gt_pred, gt, num_class=self.num_classes, device=self._device)
         corr = calculate_correlation(gt_pred,gt)
         r2 = calculate_r2_score(carbon_pred,carbon)
         # print("miou:",miou)
@@ -76,3 +80,4 @@ class BaseModel(L.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=1e-5, weight_decay=1e-6)
         return optimizer
+

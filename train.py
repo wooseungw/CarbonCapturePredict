@@ -6,13 +6,7 @@ from dataset import CarbonDataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import torch
-def select_device():
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    elif torch.backends.mps.is_available():  # PyTorch 1.9.0 이상에서 MPS 지원 확인
-        return torch.device("mps")
-    else:
-        return torch.device("cpu")
+
 
 
 # 이전 wandb 실행의 ID 있는 경우만
@@ -35,16 +29,16 @@ checkpoint_callback_last = ModelCheckpoint(
     save_last=True,  # 마지막 에폭의 체크포인트를 저장
 )
 FOLDER_PATH={
-    'Dataset\Training/image/AP10_Forest_IMAGE':7,
-    'Dataset\Training/image/AP25_Forest_IMAGE':7,
-    'Dataset\Training/image/AP10_City_IMAGE':9,
-    'Dataset\Training/image/AP25_City_IMAGE':9,
+    'Dataset/Training/image/AP10_Forest_IMAGE':7,
+    'Dataset/Training/image/AP25_Forest_IMAGE':7,
+    'Dataset/Training/image/AP10_City_IMAGE':9,
+    'Dataset/Training/image/AP25_City_IMAGE':9,
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
 }
 # device = select_device()
 # print(f"Selected device: {device}")
 def train():
-    fp = "Dataset\Training/image/AP10_Forest_IMAGE"
+    fp = "Dataset/Training/image/AP10_Forest_IMAGE"
     num_classes = FOLDER_PATH[fp]
     # WandbLogger 설정, 이전 실행 재개
     wandb_logger = WandbLogger(
