@@ -58,7 +58,7 @@ def train():
     trainer = L.Trainer(
         logger=wandb_logger,  # Wandb 로거 사용
         log_every_n_steps=50, # 50번의 Step마다 로깅
-        #resume_from_checkpoint=checkpoint_path, 
+        #resume_from_checkpoint=checkpoint_path,
         callbacks=[checkpoint_callback_min_loss, checkpoint_callback_last],  # 콜백 리스트에 추가
         max_epochs=30,  # 최대 에폭 수
     )
