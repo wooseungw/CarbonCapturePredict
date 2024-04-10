@@ -29,16 +29,14 @@ class DPT(BaseModel):
         self,
         head,
         features=256,
-        num_classes=4,
         backbone="vitb_rn50_384",
         readout="project",
         channels_last=False,
         use_bn=False,
         enable_attention_hooks=False,
-        **kwargs
-        ):
-        #print("DPT num_classes",num_classes)
-        super(DPT, self).__init__(num_classes)
+    ):
+
+        super(DPT, self).__init__()
 
         self.channels_last = channels_last
 
@@ -67,7 +65,6 @@ class DPT(BaseModel):
         self.scratch.refinenet4 = _make_fusion_block(features, use_bn)
 
         self.scratch.output_conv = head
-        
 
     def forward(self, x):
         if self.channels_last == True:
@@ -163,7 +160,7 @@ class DPTSegmentationWithCarbon(DPT):
         
         #print("SEG num_classes",num_classes)
         kwargs["use_bn"] = True
-        kwargs["num_classes"] = num_classes
+        
         head = nn.Sequential(
             nn.Conv2d(features, features, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(features),

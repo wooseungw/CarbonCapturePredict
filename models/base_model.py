@@ -4,9 +4,24 @@ import torch.nn.functional as F
 import lightning as L
 from .util import calculate_correlation, calculate_r2_score , batch_miou,select_device
 
-class BaseModel(L.LightningModule):
+
+class BaseModel(nn.Module):
+    def load(self, path):
+        """Load model from file.
+
+        Args:
+            path (str): file path
+        """
+        parameters = torch.load(path, map_location=torch.device("cpu"))
+
+        if "optimizer" in parameters:
+            parameters = parameters["model"]
+
+        self.load_state_dict(parameters)
+
+class BaseModel_L(L.LightningModule):
     def __init__(self, num_classes):
-        super(BaseModel, self).__init__()
+        super(BaseModel_L, self).__init__()
         self.num_classes = num_classes
         #print("BASE num_classes",num_classes)
         weight = torch.tensor([0.0] + [1.0] * (self.num_classes - 1))

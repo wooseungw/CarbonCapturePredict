@@ -71,6 +71,9 @@ def compute_miou(hist):
     return miou
 
 def batch_miou(label_preds, label_trues, num_class, device):
+    label_trues = label_trues.long()  # 정수 타입으로 변환
+    label_preds = label_preds.long()  # 정수 타입으로 변환
+    
     """Calculate mIoU for a batch of predictions and labels"""
     hist = torch.zeros((num_class, num_class), device=device)  # 디바이스 지정
     for lt, lp in zip(label_trues, label_preds):
@@ -80,28 +83,30 @@ def batch_miou(label_preds, label_trues, num_class, device):
     return compute_miou(hist)
 
 
-if __name__ == "__main__":
-  # 예제 데이터
-  n_class = 3  # 클래스 수
-  batch_size = 10
-  height, width = 224, 224  # 예제 이미지 크기
-
-  # 임의의 실제 라벨과 예측 라벨 생성
-  label_trues = torch.randint(0, n_class, (batch_size, height, width))
-  label_preds = torch.randint(0, n_class, (batch_size, height, width))
-
-  # 배치 mIoU 계산
-  miou = batch_miou(label_preds,label_trues, n_class)
-  print(f"Batch mIoU: {miou.item()}")
 
 
-  # 상관관계 계산
-  correlation = calculate_correlation(label_preds, label_trues)
-  print(f"Correlation: {correlation}")
+# if __name__ == "__main__":
+#     # 예제 데이터
+#     n_class = 3  # 클래스 수
+#     batch_size = 10
+#     height, width = 224, 224  # 예제 이미지 크기
+
+#     # 임의의 실제 라벨과 예측 라벨 생성
+#     label_trues = torch.randint(0, n_class, (batch_size, height, width))
+#     label_preds = torch.randint(0, n_class, (batch_size, height, width))
+
+#     # 배치 mIoU 계산
+#     miou = batch_miou(label_preds,label_trues, n_class)
+#     print(f"Batch mIoU: {miou.item()}")
 
 
-  pred_carbon = torch.rand((batch_size,1, height, width))
-  label_carbon = torch.rand((batch_size,1, height, width))
-  # R² 점수 계산
-  r2_score = calculate_r2_score(pred_carbon, label_carbon)
-  print(f"R² Score: {r2_score}")
+#     # 상관관계 계산
+#     correlation = calculate_correlation(label_preds, label_trues)
+#     print(f"Correlation: {correlation}")
+
+
+#     pred_carbon = torch.rand((batch_size,1, height, width))
+#     label_carbon = torch.rand((batch_size,1, height, width))
+#     # R² 점수 계산
+#     r2_score = calculate_r2_score(pred_carbon, label_carbon)
+#     print(f"R² Score: {r2_score}")
