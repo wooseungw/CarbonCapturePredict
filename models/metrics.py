@@ -8,7 +8,7 @@ from .evaluate import corr, r_square, corr_wZero, r_square_wZero
 
 
 class CarbonLoss(nn.Module):
-    def __init__(self, weight=None, size_average=True, cls_lambda=1, reg_lambda=0.005, num_classes = 4,ignore_label=255):
+    def __init__(self, weight=None, size_average=True, cls_lambda=1, reg_lambda=0.0001, num_classes = 4,ignore_label=255):
         super().__init__()
         self.mse = nn.MSELoss(reduction="sum")
         self.ce = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (num_classes-1), dtype=torch.float))
