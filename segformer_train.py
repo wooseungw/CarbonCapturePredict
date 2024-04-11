@@ -12,6 +12,7 @@ from tqdm import tqdm
 from models.metrics import CarbonLoss
 from models.unet import UNet_carbon
 import wandb
+import os
 
 def main():
     fp = "Dataset/Training/image/AP10_Forest_IMAGE"
@@ -22,6 +23,8 @@ def main():
     batch_size = 32
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoint/{model_name}/{dataset_name}"
+    # Create the directory if it doesn't exist
+    os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
     wandb.init(
     # set the wandb project where this run will be logged
@@ -91,20 +94,20 @@ def main():
             optimizer.zero_grad()
             gt_pred, carbon_pred  = model(x)
             #print(gt_pred.shape, gt_pred.type, gt.squeeze(1).shape, carbon_pred.shape, carbon.shape)
-            total_loss, cls_loss, reg_loss, acc_c, acc_r = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
             #total_loss = gt_criterion(gt_pred, gt.squeeze(1))
             
             total_loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch+1}, Loss: {total_loss.item()}, Train cls_loss: {cls_loss.item()}, Train reg_loss: {reg_loss.item()}, Train acc_c: {acc_c}, Train acc_r: {acc_r}")
-        wandb.log({"Train Loss":total_loss.item(), "Train cls_loss":cls_loss.item(), "Train reg_loss":reg_loss.item(), "Train acc_c":acc_c, "Train acc_r":acc_r})
+        print(f"Epoch {epoch+1}, Train Loss: {total_loss.item()}, Train cls_loss: {cls_loss.item()}, Train reg_loss: {reg_loss.item()}, Train acc_c: {acc_c}, Train acc_r: {acc_r} , Train miou: {miou}")
+        wandb.log({"Train Loss":total_loss.item(), "Train cls_loss":cls_loss.item(), "Train reg_loss":reg_loss.item(), "Train acc_c":acc_c, "Train acc_r":acc_r, "Train miou":miou})
         val_total_loss = 0
         model.eval()
         for  x, carbon, gt in tqdm(val_loader, desc=f"Validation Epoch {epoch+1}"):
             #x = torch.cat((image, sh), dim=0)
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             gt_pred, carbon_pred  = model(x)
-            total_loss, cls_loss, reg_loss, acc_c, acc_r = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
             #total_loss = gt_criterion(gt_pred, gt.squeeze(1))
             
             val_total_loss += total_loss.item()
@@ -112,8 +115,8 @@ def main():
         if val_total_loss < glob_val_loss:
             glob_val_loss = val_total_loss
             torch.save(model.state_dict(), f"{checkpoint_path}/best_model_{epoch+1}.pth")
-        print(f"Validation Loss: ,{val_total_loss} , Validation cls_loss: {cls_loss.item()},Validation reg_loss: {reg_loss.item()},Validation acc_c: {acc_c},Validation acc_r: {acc_r}")
-        wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r})
+        print(f"Validation Loss: ,{val_total_loss} , Validation cls_loss: {cls_loss.item()},Validation reg_loss: {reg_loss.item()},Validation acc_c: {acc_c},Validation acc_r: {acc_r}, Validation miou: {miou}")
+        wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r , "Validation miou":miou})
         wandb.log({"Epoch":epoch+1})
     torch.save(model.state_dict(), f"{checkpoint_path}/last_{epoch+1}.pth")
     wandb.finish()

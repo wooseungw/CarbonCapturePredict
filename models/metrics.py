@@ -5,20 +5,21 @@ import sys, os
 import numpy as np
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from .evaluate import corr, r_square, corr_wZero, r_square_wZero
-
+from .util import batch_miou
 
 class CarbonLoss(nn.Module):
-    def __init__(self, weight=None, size_average=True, cls_lambda=1, reg_lambda=0.0001, num_classes = 4,ignore_label=255):
+    def __init__(self, weight=None, size_average=True, cls_lambda=1, reg_lambda=0.000001, num_classes = 4,ignore_label=255):
         super().__init__()
         self.mse = nn.MSELoss(reduction="sum")
         self.ce = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (num_classes-1), dtype=torch.float))
         self.cls_lambda = cls_lambda
         self.reg_lambda = reg_lambda
-
+        self.num_classes = num_classes
     def forward(self, input_cls, target_cls, input_reg , target_reg):
                 
         cls_loss = self.ce(input_cls, target_cls)
-        
+        _, input_cls = torch.max(input_cls, dim=1)
+        miou = batch_miou(input_cls, target_cls, self.num_classes, torch.device("cpu"))
         reg_loss = self.mse(
             torch.flatten(input_reg, end_dim=-2),
             torch.flatten(target_reg, end_dim=-2)
@@ -46,4 +47,4 @@ class CarbonLoss(nn.Module):
 
         total_loss = self.cls_lambda * cls_loss + self.reg_lambda * reg_loss
 
-        return total_loss, cls_loss, reg_loss, acc_c, acc_r
+        return total_loss, cls_loss, reg_loss, acc_c, acc_r, miou
