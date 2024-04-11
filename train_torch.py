@@ -15,6 +15,7 @@ import wandb
 
 def main():
     fp = "Dataset/Training/image/AP10_Forest_IMAGE"
+    model_name = "Segformerwithcarbon"
     epochs = 100
     lr = 1e-3
     device = select_device()
@@ -28,6 +29,7 @@ def main():
     "learning_rate": lr,
     "batch_size": batch_size,
     "epochs": epochs,
+    "model_name": model_name,
     }
 )
     # 하이퍼파라미터 설정
@@ -67,10 +69,11 @@ def main():
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
     val_dataset = CarbonDataset(fp, image_transform,sh_transform, label_transform,mode="Valid")
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=8)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=8)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=8,pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=8,pin_memory=True)
     # 모델 생성
-    model = Segformerwithcarbon(**args).to(device)    
+    if model_name == "Segformerwithcarbon":
+        model = Segformerwithcarbon(**args).to(device)    
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
     #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
@@ -78,9 +81,9 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
     glob_val_loss = 10000
-    for epoch in tqdm(range(epochs)):
+    for epoch in (range(epochs)):
         model.train()
-        for x, carbon, gt in tqdm(train_loader, desc="Training"):
+        for x, carbon, gt in tqdm(train_loader, desc=f"Training Epoch {epoch+1}"):
 
             assert gt.min() >= 0 and gt.max() < FOLDER_PATH[fp], "라벨 값이 유효한 범위를 벗어났습니다."
 
@@ -93,11 +96,11 @@ def main():
             
             total_loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch+1}, Loss: {total_loss.item()}, cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
-        wandb.log({"Training Loss":total_loss.item(), "cls_loss":cls_loss.item(), "reg_loss":reg_loss.item(), "acc_c":acc_c, "acc_r":acc_r})
+        print(f"Epoch {epoch+1}, Loss: {total_loss.item()}, Train cls_loss: {cls_loss.item()}, Train reg_loss: {reg_loss.item()}, Train acc_c: {acc_c}, Train acc_r: {acc_r}")
+        wandb.log({"Train Loss":total_loss.item(), "Train cls_loss":cls_loss.item(), "Train reg_loss":reg_loss.item(), "Train acc_c":acc_c, "Train acc_r":acc_r})
         val_total_loss = 0
         model.eval()
-        for  x, carbon, gt in tqdm(val_loader, desc="Validation"):
+        for  x, carbon, gt in tqdm(val_loader, desc=f"Validation Epoch {epoch+1}"):
             #x = torch.cat((image, sh), dim=0)
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             gt_pred, carbon_pred  = model(x)
@@ -109,8 +112,8 @@ def main():
         if val_total_loss < glob_val_loss:
             glob_val_loss = val_total_loss
             torch.save(model.state_dict(), f"{checkpoint_path}/best_model_{epoch+1}.pth")
-        print(f"Validation Loss: ,{val_total_loss} , cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
-        wandb.log({"Validation Loss":val_total_loss, "cls_loss":cls_loss.item(), "reg_loss":reg_loss.item(), "acc_c":acc_c, "acc_r":acc_r})
+        print(f"Validation Loss: ,{val_total_loss} , Validation cls_loss: {cls_loss.item()},Validation reg_loss: {reg_loss.item()},Validation acc_c: {acc_c},Validation acc_r: {acc_r}")
+        wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r})
         wandb.log({"Epoch":epoch+1})
         
     wandb.finish()
