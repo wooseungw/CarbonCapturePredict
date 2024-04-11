@@ -29,6 +29,7 @@ def main():
     "learning_rate": lr,
     "batch_size": batch_size,
     "epochs": epochs,
+    "fp": fp,
     "model_name": model_name,
     }
 )
