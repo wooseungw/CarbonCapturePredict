@@ -61,8 +61,8 @@ def main():
     model = Segformerwithcarbon(**args).to(device)    
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
-    #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
-    loss = CarbonLoss(num_classes=FOLDER_PATH[fp]).to(device)
+    gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
+    #loss = CarbonLoss(num_classes=FOLDER_PATH[fp]).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
     glob_val_loss = 10000
@@ -75,8 +75,9 @@ def main():
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             optimizer.zero_grad()
             gt_pred, carbon_pred  = model(x)
-            total_loss, cls_loss, reg_loss = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
-            acc_c, acc_r  = 0, 0
+            #total_loss, cls_loss, reg_loss = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            total_loss = gt_criterion(gt_pred, gt.squeeze(1))
+            cls_loss, reg_loss, acc_c, acc_r = 0, 0 ,0,0
             total_loss.backward()
             optimizer.step()
         print(f"Epoch {epoch+1}, Loss: {total_loss.item()}, cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
@@ -86,8 +87,9 @@ def main():
             #x = torch.cat((image, sh), dim=0)
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             gt_pred, carbon_pred  = model(x)
-            total_loss, cls_loss, reg_loss = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
-            acc_c, acc_r = 0, 0
+            #total_loss, cls_loss, reg_loss = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            total_loss = gt_criterion(gt_pred, gt.squeeze(1))
+            cls_loss, reg_loss, acc_c, acc_r = 0, 0 ,0,0
             val_total_loss += total_loss.item()
         val_total_loss /= len(val_loader)  # 평균 검증 손실 계산
         if val_total_loss < glob_val_loss:
