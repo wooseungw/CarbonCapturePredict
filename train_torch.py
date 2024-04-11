@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
@@ -10,6 +11,8 @@ from models.util import select_device
 from tqdm import tqdm
 from models.metrics import CarbonLoss
 from models.unet import UNet_carbon
+
+
 def main():
     # 하이퍼파라미터 설정
     FOLDER_PATH={
@@ -41,16 +44,13 @@ def main():
     image_transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # RGB 각 채널에 대해 평균 0.5, 표준편차 0.5 적용
     ])
     sh_transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))  # 그레이스케일 채널에 대해 평균 0.5, 표준편차 0.5 적용
     ])
     label_transform = transforms.Compose([
-        transforms.Resize((256//4, 256//4)),
-        transforms.ToTensor()
+        transforms.Resize((256//4, 256//4)),  # 라벨 크기 조정
     ])
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
@@ -69,12 +69,14 @@ def main():
     for epoch in tqdm(range(epochs)):
         model.train()
         for x, carbon, gt in tqdm(train_loader, desc="Training"):
-            
+
+            assert gt.min() >= 0 and gt.max() < FOLDER_PATH[fp], "라벨 값이 유효한 범위를 벗어났습니다."
+
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             optimizer.zero_grad()
             gt_pred, carbon_pred  = model(x)
-            total_loss, cls_loss, reg_loss, acc_c, acc_r = loss(gt_pred, gt.squeeze(1).long(), carbon_pred, carbon)
-            
+            total_loss, cls_loss, reg_loss = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            acc_c, acc_r  = 0, 0
             total_loss.backward()
             optimizer.step()
         print(f"Epoch {epoch+1}, Loss: {total_loss.item()}, cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
@@ -84,7 +86,8 @@ def main():
             #x = torch.cat((image, sh), dim=0)
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
             gt_pred, carbon_pred  = model(x)
-            total_loss, cls_loss, reg_loss, acc_c, acc_r = loss(gt_pred, gt.squeeze(1).long(), carbon_pred, carbon)
+            total_loss, cls_loss, reg_loss = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            acc_c, acc_r = 0, 0
             val_total_loss += total_loss.item()
         val_total_loss /= len(val_loader)  # 평균 검증 손실 계산
         if val_total_loss < glob_val_loss:
@@ -93,5 +96,6 @@ def main():
         print(f"Validation Loss: {glob_val_loss}, Current Loss: {val_total_loss} , cls_loss: {cls_loss.item()}, reg_loss: {reg_loss.item()}, acc_c: {acc_c}, acc_r: {acc_r}")
 
 if __name__ =="__main__":
+    
     
     main()

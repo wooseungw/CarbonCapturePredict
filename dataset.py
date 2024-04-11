@@ -67,7 +67,7 @@ class Mapping():
             self.label_mapping={0:  0,                      
                                 140: 1,
                                 150: 2,
-                                190: 4, 
+                                190: 3, 
                                 255: 0}
     def __call__(self, img):
         return self.gt_mapping(img)
@@ -92,6 +92,9 @@ class CarbonDataset(Dataset):
     def __init__(self, folder_path, image_transform=None,sh_transform=None,label_transform=None, mode = "Train"):
         if mode == "Valid":
             folder_path = folder_path.replace("Training",'Validation')
+            print("Validation Set")
+        else:
+            print("Training Set")
         #이미지와 임분고 리스트 반환
         self.image_paths = get_image_paths(folder_path)
         self.sh_paths = get_image_paths(folder_path.replace("IMAGE","SH"))
@@ -113,11 +116,15 @@ class CarbonDataset(Dataset):
         
         sh_path = self.sh_paths[idx]
         sh = Image.open(sh_path).convert('L')
+        
         carbon_path = self.carbon_paths[idx]
-        carbon = Image.open(carbon_path).convert('L')
+        carbon = Image.open(carbon_path)
+        
         gt_paths = self.gt_paths[idx]
         gt = Image.open(gt_paths).convert('L')
         gt = self.Mapping(gt)
+        #print(gt)
+        
         if self.image_transform:
             image = self.image_transform(image)
             
@@ -127,7 +134,11 @@ class CarbonDataset(Dataset):
         if self.label_transform:
             carbon = self.label_transform(carbon)
             gt = self.label_transform(gt)
+            
+        gt = torch.tensor(np.array(gt), dtype=torch.long)
 
+        carbon = torch.tensor(np.array(carbon), dtype=torch.float64)
+        
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
@@ -144,19 +155,30 @@ if __name__ == "__main__":
     # Set the folder path for the dataset
     folder_path = 'Dataset/Training/image/AP10_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
+    transform_label = transforms.Compose([transforms.Resize((256//4, 256//4))])
     # Create an instance of the CustomImageDataset class
-    dataset = CarbonDataset(folder_path,transform,transform,transform, mode = "Train")
+    dataset = CarbonDataset(folder_path,transform,transform,transform_label, mode = "Train")
 
     # Create a data loader for the dataset
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     sample_index = 0
     # Iterate over the dataset and print the images and labels
     for image_sh, carbon, gt in dataloader:
         for i in range(len(image_sh)):
-            print(gt[i].shape, gt[i].type())
-            plt.imshow(gt[i].squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
-            plt.title("Sample GT")
-            plt.show()
+            #carbon
+            # print(carbon[i].shape, carbon[i].type())
+            # print(carbon.min(), carbon.max())
+            # print(carbon)
+            # plt.imshow(carbon[i].squeeze(), cmap='gray')
+            # plt.title("Sample Carbon")
+            # plt.show()
+            #gt
+            print("GT:",gt[i].shape, gt[i].type())
+            print(gt.min(), gt.max())
+            # print(gt)
+            # plt.imshow(gt[i].squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
+            # plt.title("Sample GT")
+            # plt.show()
 
         print(image_sh.shape, image_sh.type())
 
