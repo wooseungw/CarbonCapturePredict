@@ -15,35 +15,35 @@ class CarbonLoss(nn.Module):
         self.cls_lambda = cls_lambda
         self.reg_lambda = reg_lambda
 
-    def forward(self, input_cls,input_reg, target_cls, target_reg):
+    def forward(self, input_cls, target_cls, input_reg , target_reg):
                 
-        cls_loss = self.ce(input_cls, target_cls.type(torch.long).squeeze())
+        cls_loss = self.ce(input_cls, target_cls)
         
         reg_loss = self.mse(
             torch.flatten(input_reg, end_dim=-2),
             torch.flatten(target_reg, end_dim=-2)
         )
-        # input_reg = input_reg.squeeze()
-        # target_reg = target_reg.squeeze()
+        input_reg = input_reg.squeeze()
+        target_reg = target_reg.squeeze()
 
-        # corr_sum=0
-        # r_sum =0
-        # idx = 0
-        # for i in range(len(input_reg)):
-        #     ir = input_reg[i,...].cpu().detach().numpy()
-        #     tr = target_reg[i,...].cpu().detach().numpy()
-        #     if np.count_nonzero(tr) == 0:
-        #         continue          
-        #     corr_res = corr_wZero(ir,tr)
-        #     r_res = r_square_wZero(ir,tr)
-        #     if np.isnan(corr_res) or np.isnan(r_res):           
-        #         continue
-        #     corr_sum = corr_sum + corr_res
-        #     r_sum = r_sum + r_res
-        #     idx = idx +1
-        # acc_c = corr_sum/idx
-        # acc_r = r_sum/idx
+        corr_sum=0
+        r_sum =0
+        idx = 0
+        for i in range(len(input_reg)):
+            ir = input_reg[i,...].cpu().detach().numpy()
+            tr = target_reg[i,...].cpu().detach().numpy()
+            if np.count_nonzero(tr) == 0:
+                continue          
+            corr_res = corr_wZero(ir,tr)
+            r_res = r_square_wZero(ir,tr)
+            if np.isnan(corr_res) or np.isnan(r_res):           
+                continue
+            corr_sum = corr_sum + corr_res
+            r_sum = r_sum + r_res
+            idx = idx +1
+        acc_c = corr_sum/idx
+        acc_r = r_sum/idx
 
         total_loss = self.cls_lambda * cls_loss + self.reg_lambda * reg_loss
 
-        return total_loss, cls_loss, reg_loss, # acc_c, acc_r
+        return total_loss, cls_loss, reg_loss, acc_c, acc_r

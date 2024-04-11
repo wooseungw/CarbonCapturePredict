@@ -137,7 +137,7 @@ class CarbonDataset(Dataset):
             
         gt = torch.tensor(np.array(gt), dtype=torch.long)
 
-        carbon = torch.tensor(np.array(carbon), dtype=torch.float64)
+        carbon = torch.tensor(np.array(carbon), dtype=torch.float32)
         
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
@@ -175,6 +175,7 @@ if __name__ == "__main__":
             #gt
             print("GT:",gt[i].shape, gt[i].type())
             print(gt.min(), gt.max())
+            print(carbon.shape)
             # print(gt)
             # plt.imshow(gt[i].squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
             # plt.title("Sample GT")
