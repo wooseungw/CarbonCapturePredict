@@ -17,10 +17,10 @@ import os
 def main():
     fp = "Dataset/Training/image/AP10_Forest_IMAGE"
     model_name = "DPTSegmentationWithCarbon"
-    epochs = 100
+    epochs = 32
     lr = 1e-3
     device = select_device()
-    batch_size = 32
+    batch_size = 8
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoint/{model_name}/{dataset_name}"
     # Create the directory if it doesn't exist
