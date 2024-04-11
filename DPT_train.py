@@ -5,21 +5,23 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from models.segformer_simple import Segformer, Segformerwithcarbon
+
 from dataset import CarbonDataset
 from models.util import select_device
 from tqdm import tqdm
 from models.metrics import CarbonLoss
-from models.unet import UNet_carbon
+from models.dpt import DPTSegmentationWithCarbon
 import wandb
 
 def main():
     fp = "Dataset/Training/image/AP10_Forest_IMAGE"
-    model_name = "Segformerwithcarbon"
+    model_name = "DPTSegmentationWithCarbon"
     epochs = 100
     lr = 1e-3
     device = select_device()
     batch_size = 32
+    dataset_name = fp.split("/")[-1]
+    checkpoint_path = f"checkpoint/{model_name}/{dataset_name}"
     wandb.login()
     wandb.init(
     # set the wandb project where this run will be logged
@@ -45,13 +47,6 @@ def main():
 
     
     args = {
-    'dims': (32, 64, 160, 256),
-    'heads': (1, 2, 5, 8),
-    'ff_expansion': (8, 8, 4, 4),
-    'reduction_ratio': (8, 4, 2, 1),
-    'num_layers': 2,
-    'channels': 4,
-    'decoder_dim': 256,
     'num_classes': FOLDER_PATH[fp]
     }
     
@@ -65,7 +60,7 @@ def main():
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
-        transforms.Resize((256//4, 256//4)),  # 라벨 크기 조정
+        transforms.Resize((256, 256)),  # 라벨 크기 조정
     ])
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
@@ -73,8 +68,8 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=8,pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=8,pin_memory=True)
     # 모델 생성
-    if model_name == "Segformerwithcarbon":
-        model = Segformerwithcarbon(**args).to(device)    
+    if model_name == "DPTSegmentationWithCarbon":
+        model = DPTSegmentationWithCarbon(**args).to(device)    
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
     #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
