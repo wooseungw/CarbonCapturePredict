@@ -76,7 +76,7 @@ def main():
     loss = CarbonLoss(num_classes=FOLDER_PATH[fp]).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
-    glob_val_loss = 10000
+    glob_val_loss = 999999999
     for epoch in (range(epochs)):
         model.train()
         for x, carbon, gt in tqdm(train_loader, desc=f"Training Epoch {epoch+1}"):
@@ -111,7 +111,7 @@ def main():
         print(f"Validation Loss: ,{val_total_loss} , Validation cls_loss: {cls_loss.item()},Validation reg_loss: {reg_loss.item()},Validation acc_c: {acc_c},Validation acc_r: {acc_r}")
         wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r})
         wandb.log({"Epoch":epoch+1})
-        
+    torch.save(model.state_dict(), f"{checkpoint_path}/last_{epoch+1}.pth")
     wandb.finish()
 if __name__ =="__main__":
     
