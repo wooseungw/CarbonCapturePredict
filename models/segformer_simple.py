@@ -277,7 +277,10 @@ class Segformerwithcarbon(nn.Module):
             nn.Conv2d(decoder_dim, num_classes, 1),
         )
         self.to_regression = nn.Sequential(
-            nn.Conv2d(4 * decoder_dim, decoder_dim, 1),
+            nn.Conv2d(4 * decoder_dim, 2*decoder_dim, 1),
+            nn.ReLU(),
+            nn.Conv2d(2*decoder_dim, decoder_dim, 1),
+            nn.ReLU(),
             nn.Conv2d(decoder_dim, 1, 1),
         )
 
