@@ -170,15 +170,24 @@ class DPTSegmentationWithCarbon(DPT):
             Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
         )
         super().__init__(head, **kwargs)
+        # self.carbon_head = nn.Sequential(
+        #     nn.Conv2d(features, num_classes*4, kernel_size=3, stride=1,padding=1, bias=True),
+        #     Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
+        #     nn.BatchNorm2d(num_classes*4),
+        #     nn.ReLU(True),
+        #     nn.Dropout(0.1, False),
+        #     nn.Conv2d(num_classes*4, 1, kernel_size=1),
+        # )
         self.carbon_head = nn.Sequential(
-            nn.Conv2d(features, num_classes*4, kernel_size=3, stride=1,padding=1, bias=True),
+            nn.Conv2d(features, 2*features, kernel_size=3, stride=1,padding=1, bias=True),
             Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
-            nn.BatchNorm2d(num_classes*4),
-            nn.ReLU(True),
-            nn.Dropout(0.1, False),
-            nn.Conv2d(num_classes*4, 1, kernel_size=1),
-            
+            nn.BatchNorm2d(2*features),
+            nn.ReLU(),
+            nn.Conv2d(2*features, features, 1),
+            nn.ReLU(),
+            nn.Conv2d(features, 1, 1),
         )
+
         if path is not None:
             self.load(path)
     

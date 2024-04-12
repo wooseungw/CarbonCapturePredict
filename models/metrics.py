@@ -29,7 +29,7 @@ class CarbonLoss(nn.Module):
 
         corr_sum=0
         r_sum =0
-        idx = 0
+        idx = 1e-9
         for i in range(len(input_reg)):
             ir = input_reg[i,...].cpu().detach().numpy()
             tr = target_reg[i,...].cpu().detach().numpy()

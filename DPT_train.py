@@ -20,9 +20,9 @@ def main():
     epochs = 100
     lr = 1e-3
     device = select_device()
-    batch_size = 8
+    batch_size = 8    
     cls_lambda = 1
-    reg_lambda = 0.0005
+    reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     # Create the directory if it doesn't exist
