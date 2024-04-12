@@ -17,12 +17,14 @@ import os
 def main():
     fp = "Dataset/Training/image/AP10_Forest_IMAGE"
     model_name = "DPTSegmentationWithCarbon"
-    epochs = 32
+    epochs = 100
     lr = 1e-3
     device = select_device()
     batch_size = 8
+    cls_lambda = 1
+    reg_lambda = 0.0005
     dataset_name = fp.split("/")[-1]
-    checkpoint_path = f"checkpoint/{model_name}/{dataset_name}"
+    checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -36,6 +38,8 @@ def main():
     "epochs": epochs,
     "fp": fp,
     "model_name": model_name,
+    "cls_lambda": cls_lambda,
+    "reg_lambda": reg_lambda
     }
 )
     # 하이퍼파라미터 설정
@@ -60,7 +64,7 @@ def main():
     ])
     sh_transform = transforms.Compose([
         transforms.Resize((256, 256)),
-        transforms.ToTensor(),
+        transforms.ToTensor(),  
     ])
     label_transform = transforms.Compose([
         transforms.Resize((256, 256)),  # 라벨 크기 조정
@@ -76,7 +80,7 @@ def main():
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
     #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
-    loss = CarbonLoss(num_classes=FOLDER_PATH[fp]).to(device)
+    loss = CarbonLoss(num_classes=FOLDER_PATH[fp],cls_lambda=cls_lambda,reg_lambda=reg_lambda).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
     glob_val_loss = 999999999
@@ -95,7 +99,7 @@ def main():
             
             total_loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch+1}, Train Loss: {total_loss.item()}, Train cls_loss: {cls_loss.item()}, Train reg_loss: {reg_loss.item()}, Train acc_c: {acc_c}, Train acc_r: {acc_r} , Train miou: {miou}")
+        print(f"Epoch {epoch+1}, Train Loss: {total_loss.item():.4f}, Train cls_loss: {cls_loss.item():.4f}, Train reg_loss: {reg_loss.item():.4f}, Train acc_c: {acc_c:.4f}, Train acc_r: {acc_r:.4f} , Train miou: {miou:.4f}")
         wandb.log({"Train Loss":total_loss.item(), "Train cls_loss":cls_loss.item(), "Train reg_loss":reg_loss.item(), "Train acc_c":acc_c, "Train acc_r":acc_r, "Train miou":miou})
         val_total_loss = 0
         model.eval()
@@ -111,7 +115,7 @@ def main():
         if val_total_loss < glob_val_loss:
             glob_val_loss = val_total_loss
             torch.save(model.state_dict(), f"{checkpoint_path}/best_model_{epoch+1}.pth")
-        print(f"Validation Loss: ,{val_total_loss} , Validation cls_loss: {cls_loss.item()},Validation reg_loss: {reg_loss.item()},Validation acc_c: {acc_c},Validation acc_r: {acc_r}, Validation miou: {miou}")
+        print(f"Validation Loss: {val_total_loss:.4f}, Validation cls_loss: {cls_loss.item():.4f}, Validation reg_loss: {reg_loss.item():.4f}, Validation acc_c: {acc_c:.4f}, Validation acc_r: {acc_r:.4f}, Validation miou: {miou:.4f}")
         wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r , "Validation miou":miou})
         wandb.log({"Epoch":epoch+1})
     torch.save(model.state_dict(), f"{checkpoint_path}/last_{epoch+1}.pth")
