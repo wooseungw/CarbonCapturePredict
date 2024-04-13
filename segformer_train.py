@@ -30,7 +30,6 @@ def main():
     'heads':           (1, 2, 5, 8),#N
     'ff_expansion':     (8, 8, 4, 4),#E
     'num_layers':       (2, 2, 2, 2),#L
-
     'channels': 4,#input channels
     'decoder_dim': 512,
     'num_classes': FOLDER_PATH[fp]
@@ -39,17 +38,19 @@ def main():
     epochs = 100
     lr = 1e-4
     device = select_device()
-    batch_size = 8
+    batch_size = 16
     cls_lambda = 1
     reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
+    notes = "Segformerwithcarbon_B1"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
     wandb.init(
     # set the wandb project where this run will be logged
     project="CCP",
+    name=notes,
     # track hyperparameters and run metadata
     config={
     "learning_rate": lr,
@@ -61,7 +62,7 @@ def main():
     "reg_lambda": reg_lambda,
     "checkpoint_path": checkpoint_path
     },
-    notes="Segformerwithcarbon_B2"
+    notes=notes
     )
     wandb.config.update(args)
     # 하이퍼파라미터 설정
@@ -123,11 +124,11 @@ def main():
         val_total_loss /= len(val_loader)  # 평균 검증 손실 계산
         if val_total_loss < glob_val_loss:
             glob_val_loss = val_total_loss
-            torch.save(model.state_dict(), f"{checkpoint_path}/best_model_{epoch+1}.pth")
+            torch.save(model.state_dict(), f"{checkpoint_path}/{notes}_best_model.pth")
         print(f"Validation Loss: {val_total_loss:.4f}, Validation cls_loss: {cls_loss.item():.4f}, Validation reg_loss: {reg_loss.item():.4f}, Validation acc_c: {acc_c:.4f}, Validation acc_r: {acc_r:.4f}, Validation miou: {miou:.4f}")
         wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r , "Validation miou":miou})
         wandb.log({"Epoch":epoch+1})
-    torch.save(model.state_dict(), f"{checkpoint_path}/last_{epoch+1}.pth")
+    torch.save(model.state_dict(), f"{checkpoint_path}/{notes}_last_{epoch+1}.pth")
     wandb.finish()
 if __name__ =="__main__":
     
