@@ -15,8 +15,19 @@ import wandb
 import os
 
 def main():
+    # 하이퍼파라미터 설정
+    FOLDER_PATH={
+        'Dataset/Training/image/AP10_Forest_IMAGE':7,
+        'Dataset/Training/image/AP25_Forest_IMAGE':7,   
+        'Dataset/Training/image/AP10_City_IMAGE':9,
+        'Dataset/Training/image/AP25_City_IMAGE':9,
+        'Dataset/Training/image/SN10_Forest_IMAGE':4,
+    }
     fp = "Dataset/Training/image/AP10_Forest_IMAGE"
     model_name = "DPTSegmentationWithCarbon"
+    args = {
+    'num_classes': FOLDER_PATH[fp]
+    }
     epochs = 100
     lr = 1e-3
     device = select_device()
@@ -25,6 +36,7 @@ def main():
     reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
+    
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -39,24 +51,11 @@ def main():
     "fp": fp,
     "model_name": model_name,
     "cls_lambda": cls_lambda,
-    "reg_lambda": reg_lambda
-    }
-)
-    # 하이퍼파라미터 설정
-    FOLDER_PATH={
-        'Dataset/Training/image/AP10_Forest_IMAGE':7,
-        'Dataset/Training/image/AP25_Forest_IMAGE':7,   
-        'Dataset/Training/image/AP10_City_IMAGE':9,
-        'Dataset/Training/image/AP25_City_IMAGE':9,
-        'Dataset/Training/image/SN10_Forest_IMAGE':4,
-    }
-    checkpoint_path = "checkpoint"
-
-    
-    args = {
-    'num_classes': FOLDER_PATH[fp]
-    }
-    
+    "reg_lambda": reg_lambda,
+    "checkpoint_path": checkpoint_path
+    })
+    wandb.config.update(args)
+    print(checkpoint_path)    
     # 데이터셋을 위한 변환 정의
     image_transform = transforms.Compose([
         transforms.Resize((256, 256)),

@@ -136,7 +136,10 @@ class MiT(nn.Module):
         num_layers
     ):
         super().__init__()
-        stage_kernel_stride_pad = ((7, 4, 3), (3, 2, 1), (3, 2, 1), (3, 2, 1))
+        stage_kernel_stride_pad = ((7, 4, 3), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1))
 
         dims = (channels, *dims)
         dim_pairs = list(zip(dims[:-1], dims[1:]))
