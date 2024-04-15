@@ -133,13 +133,14 @@ class MiT(nn.Module):
         heads,
         ff_expansion,
         reduction_ratio,
-        num_layers
-    ):
-        super().__init__()
-        stage_kernel_stride_pad = ((7, 4, 3), 
+        num_layers,
+        stage_kernel_stride_pad = ((4, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1))
+    ):
+        super().__init__()
+
 
         dims = (channels, *dims)
         dim_pairs = list(zip(dims[:-1], dims[1:]))
@@ -253,7 +254,11 @@ class Segformerwithcarbon(nn.Module):
         num_layers=2,
         channels=3,
         decoder_dim=256,
-        num_classes=19
+        num_classes=19,
+        stage_kernel_stride_pad = ((4, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1))
     ):
         super().__init__()
         dims, heads, ff_expansion, reduction_ratio, num_layers = map(
@@ -267,7 +272,8 @@ class Segformerwithcarbon(nn.Module):
             heads=heads,
             ff_expansion=ff_expansion,
             reduction_ratio=reduction_ratio,
-            num_layers=num_layers
+            num_layers=num_layers,
+            stage_kernel_stride_pad = stage_kernel_stride_pad
         )
 
         self.to_fused = nn.ModuleList([nn.Sequential(

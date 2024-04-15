@@ -32,7 +32,11 @@ def main():
     'num_layers':       (2, 2, 2, 2),#L
     'channels': 4,#input channels
     'decoder_dim': 512,
-    'num_classes': FOLDER_PATH[fp]
+    'num_classes': FOLDER_PATH[fp],
+    'stage_kernel_stride_pad': [(4, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1)],
     }
     
     epochs = 100
@@ -43,7 +47,7 @@ def main():
     reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
-    notes = "Segformerwithcarbon_B0_SN"
+    notes = "Segformerwithcarbon_B0_SN_128"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -77,7 +81,7 @@ def main():
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
-        transforms.Resize((256//4, 256//4)),  # 라벨 크기 조정
+        transforms.Resize((256//2, 256//2)),  # 라벨 크기 조정
     ])
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
