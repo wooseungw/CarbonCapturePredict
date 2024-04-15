@@ -22,10 +22,10 @@ def main():
     'Dataset/Training/image/AP25_City_IMAGE':9,
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
-    fp = "Dataset/Training/image/AP10_Forest_IMAGE"
+    fp = "Dataset/Training/image/SN10_Forest_IMAGE"
     model_name = "Segformerwithcarbon"
     args = {
-    'dims':             (64, 128, 320, 512),#C
+    'dims':             (32, 64, 160, 256),#C
     'reduction_ratio': (8, 4, 2, 1),#R
     'heads':           (1, 2, 5, 8),#N
     'ff_expansion':     (8, 8, 4, 4),#E
@@ -38,12 +38,12 @@ def main():
     epochs = 100
     lr = 1e-4
     device = select_device()
-    batch_size = 16
+    batch_size = 8
     cls_lambda = 1
     reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
-    notes = "Segformerwithcarbon_B1"
+    notes = "Segformerwithcarbon_B0_SN"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -53,15 +53,15 @@ def main():
     name=notes,
     # track hyperparameters and run metadata
     config={
-    "learning_rate": lr,
-    "batch_size": batch_size,
-    "epochs": epochs,
-    "fp": fp,
-    "model_name": model_name,
-    "cls_lambda": cls_lambda,
-    "reg_lambda": reg_lambda,
-    "checkpoint_path": checkpoint_path
-    },
+        "learning_rate": lr,
+        "batch_size": batch_size,
+        "epochs": epochs,
+        "fp": fp,
+        "model_name": model_name,
+        "cls_lambda": cls_lambda,
+        "reg_lambda": reg_lambda,
+        "checkpoint_path": checkpoint_path
+        },
     notes=notes
     )
     wandb.config.update(args)
@@ -97,7 +97,6 @@ def main():
     for epoch in (range(epochs)):
         model.train()
         for x, carbon, gt in tqdm(train_loader, desc=f"Training Epoch {epoch+1}"):
-
             assert gt.min() >= 0 and gt.max() < FOLDER_PATH[fp], "라벨 값이 유효한 범위를 벗어났습니다."
 
             x, carbon, gt = x.to(device), carbon.to(device), gt.to(device)
