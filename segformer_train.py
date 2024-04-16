@@ -25,13 +25,13 @@ def main():
     fp = "Dataset/Training/image/SN10_Forest_IMAGE"
     model_name = "Segformerwithcarbon"
     args = {
-    'dims':             (32, 64, 160, 256),#C
+    'dims':             (64, 128, 320, 512),#C
+    'decoder_dim': 512,
     'reduction_ratio': (8, 4, 2, 1),#R
     'heads':           (1, 2, 5, 8),#N
     'ff_expansion':     (8, 8, 4, 4),#E
     'num_layers':       (2, 2, 2, 2),#L
     'channels': 4,#input channels
-    'decoder_dim': 512,
     'num_classes': FOLDER_PATH[fp],
     'stage_kernel_stride_pad': [(4, 2, 1), 
                                    (3, 2, 1), 
@@ -42,12 +42,12 @@ def main():
     epochs = 100
     lr = 1e-4
     device = select_device()
-    batch_size = 8
+    batch_size = 4
     cls_lambda = 1
     reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
-    notes = "Segformerwithcarbon_B0_SN_128"
+    notes = "Segformerwithcarbon_B1_SN_128"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
