@@ -15,6 +15,7 @@ import wandb
 import os
 
 def main():
+    
     FOLDER_PATH={
     'Dataset/Training/image/AP10_Forest_IMAGE':7,
     'Dataset/Training/image/AP25_Forest_IMAGE':7,   
@@ -22,8 +23,9 @@ def main():
     'Dataset/Training/image/AP25_City_IMAGE':9,
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
-    fp = "Dataset/Training/image/SN10_Forest_IMAGE"
+    fp = "Dataset/Training/image/AP25_Forest_IMAGE"
     model_name = "Segformerwithcarbon"
+    pretrain = None
     args = {
     'dims':             (64, 128, 320, 512),#C
     'decoder_dim': 512,
@@ -47,7 +49,7 @@ def main():
     reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
-    notes = "Segformerwithcarbon_B1_SN_128"
+    notes = "Segformer_B1_SN_128"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -64,7 +66,8 @@ def main():
         "model_name": model_name,
         "cls_lambda": cls_lambda,
         "reg_lambda": reg_lambda,
-        "checkpoint_path": checkpoint_path
+        "checkpoint_path": checkpoint_path,
+        "pretrain": pretrain,
         },
     notes=notes
     )
@@ -90,7 +93,10 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=8,pin_memory=True)
     # 모델 생성
     if model_name == "Segformerwithcarbon":
-        model = Segformerwithcarbon(**args).to(device)    
+        model = Segformerwithcarbon(**args)
+    if pretrain != None:
+        model.load_state_dict(torch.load(pretrain))
+    model.to(device)
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
     #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
