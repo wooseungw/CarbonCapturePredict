@@ -142,7 +142,7 @@ class CarbonDataset(Dataset):
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image_sh , carbon , gt
+        return image,sh , carbon , gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
@@ -153,7 +153,7 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'Dataset/Validation/image/AP25_Forest_IMAGE'
+    folder_path = 'Dataset/Validation/image/SN10_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     transform_label = transforms.Compose([transforms.Resize((256//2, 256//2))])
     # Create an instance of the CustomImageDataset class
@@ -163,35 +163,39 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     sample_index = 0
     # Iterate over the dataset and print the images and labels
-    for image,sh, carbon, gt in dataloader:
-        for i in range(len(image)):
-            #image
-            print("Image:",image[i].shape, image[i].type())
-            print(image.min(), image.max())
-            print(image)
-            plt.imshow(image.squeeze().permute(1, 2, 0))
-            plt.title("Sample Image")
-            plt.show()
-            #carbon
-            print(carbon[i].shape, carbon[i].type())
-            print(carbon.min(), carbon.max())
-            print(carbon)
-            plt.imshow(carbon[i].squeeze(), cmap='gray')
-            plt.title("Sample Carbon")
-            plt.show()
-            #gt
-            print("GT:",gt[i].shape, gt[i].type())
-            print(gt.min(), gt.max())
-            print(carbon.shape)
-            print(gt)
-            plt.imshow(gt[i].squeeze(), cmap='gray')  # squeeze()는 1채널 이미지의 경우 채널 차원을 제거
-            plt.title("Sample GT")
-            plt.show()
-
-        print(image.shape, image.type())
-
+    for image, sh, carbon, gt in dataloader:
+        
+        # image
+        print("Image:", image.shape, image.type())
+        print(image.min(), image.max())
+        print(image)
+        plt.subplot(1, 3, 1)
+        plt.imshow(image.squeeze().permute(1, 2, 0))
+        plt.title("Sample Image")
+        
+        # carbon
         print(carbon.shape, carbon.type())
-        print(gt.shape, gt.type())
+        print(carbon.min(), carbon.max())
+        print(carbon)
+        plt.subplot(1, 3, 2)
+        plt.imshow(carbon.squeeze(), cmap='gray')
+        plt.title("Sample Carbon")
+        
+        # gt
+        print("GT:", gt.shape, gt.type())
+        print(gt.min(), gt.max())
+        print(carbon.shape)
+        print(gt)
+        plt.subplot(1, 3, 3)
+        plt.imshow(gt.squeeze(), cmap='gray')
+        plt.title("Sample GT")
+        
+        plt.show()
+
+        # print(image.shape, image.type())
+
+        # print(carbon.shape, carbon.type())
+        # print(gt.shape, gt.type())
         
         import matplotlib.pyplot as plt
 
