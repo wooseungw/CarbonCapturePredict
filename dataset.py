@@ -153,11 +153,11 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'Dataset/Validation/image/SN10_Forest_IMAGE'
+    folder_path = 'Dataset/Training/image/SN10_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     transform_label = transforms.Compose([transforms.Resize((256//2, 256//2))])
     # Create an instance of the CustomImageDataset class
-    dataset = CarbonDataset(folder_path,transform,transform,transform_label, mode = "Train")
+    dataset = CarbonDataset(folder_path,transform,transform,transform_label, mode = "Valid")
 
     # Create a data loader for the dataset
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
@@ -197,9 +197,5 @@ if __name__ == "__main__":
         # print(carbon.shape, carbon.type())
         # print(gt.shape, gt.type())
         
-        import matplotlib.pyplot as plt
 
-        # Select one sample from the dataset
-        sample_index += 1
-        # 시각화
 
