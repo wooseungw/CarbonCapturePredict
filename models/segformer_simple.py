@@ -263,8 +263,8 @@ class Segformerwithcarbon(nn.Module):
         super().__init__()
         dims, heads, ff_expansion, reduction_ratio, num_layers = map(
             partial(cast_tuple, depth=4), (dims, heads, ff_expansion, reduction_ratio, num_layers))
-        assert all([*map(lambda t: len(t) == 4, (dims, heads, ff_expansion, reduction_ratio, num_layers))]), \
-            'only four stages are allowed, all keyword arguments must be either a single value or a tuple of 4 values'
+        #assert all([*map(lambda t: len(t) == 4, (dims, heads, ff_expansion, reduction_ratio, num_layers))]), \
+        #'네 개의 스테이지만 허용됩니다. 모든 키워드 인수는 단일 값이거나 4개의 값으로 구성된 튜플이어야 합니다.'
 
         self.mit = MiT(
             channels=channels,
