@@ -343,7 +343,7 @@ class Segwithcarbon(nn.Module):
         )
         self.to_regression = nn.Sequential(
             nn.Conv2d(3 * decoder_dim, decoder_dim, 1),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Conv2d(decoder_dim, 1, 1),
         )
 
