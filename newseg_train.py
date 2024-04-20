@@ -36,7 +36,7 @@ def main():
     'num_layers':       (2, 2, 2, 2),#L
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
-    'stage_kernel_stride_pad': [(7, 4, 3), 
+    'stage_kernel_stride_pad': [(4, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1)],
