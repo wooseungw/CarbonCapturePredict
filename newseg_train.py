@@ -40,7 +40,7 @@ def main():
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1)],
-    'decoder_dim': 256,
+    'decoder_dim': 512,
     'num_classes': FOLDER_PATH[fp],
 
     }
