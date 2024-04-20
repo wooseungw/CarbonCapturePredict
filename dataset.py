@@ -142,7 +142,7 @@ class CarbonDataset(Dataset):
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image,sh , carbon , gt
+        return image_sh , carbon , gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))

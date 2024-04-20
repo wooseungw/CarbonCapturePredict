@@ -24,7 +24,7 @@ def main():
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
     
-    fp = "Dataset/Training/image/SN10_Forest_IMAGE"
+    fp = "Dataset/Training/image/AP25_Forest_IMAGE"
     
     model_name = "Segformerwithcarbon"
     args = {
@@ -36,23 +36,26 @@ def main():
     'num_layers':       (2, 2, 2, 2),#L
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
-    'stage_kernel_stride_pad': [(4, 2, 1), 
+    'stage_kernel_stride_pad': [(7, 4, 3), 
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1)],
     }
-    
+    label_size = 256//4
+    label_transform = transforms.Compose([
+        transforms.Resize((label_size, label_size)),  # 라벨 크기 조정
+    ])
     
     epochs = 300
     lr = 1e-4
     device = select_device()
-    batch_size = 4
+    batch_size = 16
     cls_lambda = 1
-    reg_lambda = 0.01
+    reg_lambda = 0.005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     pretrain = None
-    name = "Segformer_B1_"+dataset_name.replace("_IMAGE", "")+"_128"
+    name = "Segformer_B1_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -85,9 +88,7 @@ def main():
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ])
-    label_transform = transforms.Compose([
-        transforms.Resize((256//2, 256//2)),  # 라벨 크기 조정
-    ])
+
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
     val_dataset = CarbonDataset(fp, image_transform,sh_transform, label_transform,mode="Valid")

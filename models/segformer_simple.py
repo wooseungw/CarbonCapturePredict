@@ -134,7 +134,7 @@ class MiT(nn.Module):
         ff_expansion,
         reduction_ratio,
         num_layers,
-        stage_kernel_stride_pad = ((4, 2, 1), 
+        stage_kernel_stride_pad = ((7, 4, 3),  
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1))
@@ -255,9 +255,9 @@ class Segformerwithcarbon(nn.Module):
         channels=3,
         decoder_dim=256,
         num_classes=19,
-        stage_kernel_stride_pad = ((4, 2, 1), 
+        stage_kernel_stride_pad = ((7, 4, 3), 
                                    (3, 2, 1), 
-                                   (3, 2, 1), 
+                                   (3, 2, 1),
                                    (3, 2, 1))
     ):
         super().__init__()
