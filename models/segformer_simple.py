@@ -318,8 +318,8 @@ class Segwithcarbon(nn.Module):
     ):
         super().__init__()
         dims, heads, ff_expansion, reduction_ratio, num_layers = map(
-            partial(cast_tuple, depth=2), (dims, heads, ff_expansion, reduction_ratio, num_layers))
-        assert all([*map(lambda t: len(t) == 2, (dims, heads, ff_expansion, reduction_ratio, num_layers))]), \
+            partial(cast_tuple, depth=3), (dims, heads, ff_expansion, reduction_ratio, num_layers))
+        assert all([*map(lambda t: len(t) == 3, (dims, heads, ff_expansion, reduction_ratio, num_layers))]), \
         '네 개의 스테이지만 허용됩니다. 모든 키워드 인수는 단일 값이거나 4개의 값으로 구성된 튜플이어야 합니다.'
 
         self.mit = MiT(
@@ -338,11 +338,11 @@ class Segwithcarbon(nn.Module):
         ) for i, dim in enumerate(dims)])
 
         self.to_segmentation = nn.Sequential(
-            nn.Conv2d(2 * decoder_dim, decoder_dim, 1),
+            nn.Conv2d(3 * decoder_dim, decoder_dim, 1),
             nn.Conv2d(decoder_dim, num_classes, 1),
         )
         self.to_regression = nn.Sequential(
-            nn.Conv2d(2 * decoder_dim, decoder_dim, 1),
+            nn.Conv2d(3 * decoder_dim, decoder_dim, 1),
             nn.GELU(),
             nn.Conv2d(decoder_dim, 1, 1),
         )
