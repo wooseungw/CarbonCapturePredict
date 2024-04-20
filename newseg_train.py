@@ -5,12 +5,12 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from models.segformer_simple import Segformer, Segformerwithcarbon
+from models.segformer_simple import Segwithcarbon
 from dataset import CarbonDataset
 from models.util import select_device
 from tqdm import tqdm
 from models.metrics import CarbonLoss
-from models.unet import UNet_carbon
+
 import wandb
 import os
 
@@ -26,7 +26,7 @@ def main():
     
     fp = "Dataset/Training/image/SN10_Forest_IMAGE"
     
-    model_name = "NewSeg"
+    model_name = "Segwithcarbon"
     args = {
     'dims': (128, 256),
     'heads': (2, 8),
@@ -54,7 +54,7 @@ def main():
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     pretrain = None
-    name = "NewSeg_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = "Segwithcarbon_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
@@ -94,8 +94,8 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=8,pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=8,pin_memory=True)
     # 모델 생성
-    if model_name == "Segformerwithcarbon":
-        model = Segformerwithcarbon(**args)
+    if model_name == "Segwithcarbon":
+        model = Segwithcarbon(**args)
     if pretrain != None:
         model.load_state_dict(torch.load(pretrain), strict=False)
     model.to(device)
