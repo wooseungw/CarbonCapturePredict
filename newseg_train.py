@@ -28,15 +28,18 @@ def main():
     
     model_name = "Segwithcarbon"
     args = {
-    'dims': (64, 128, 256),
-    'heads': (1, 5,8),
-    'ff_expansion': (8, 8,4),
-    'reduction_ratio': (8, 4 ,1),
-    'num_layers': 2,
-    'channels': 4,
-    'stage_kernel_stride_pad': [(4, 2, 1), 
-                                (3, 2, 1), 
-                                (3, 2, 1)],
+    'dims':             (64, 128, 320, 512),#C
+    'decoder_dim': 512,
+    'reduction_ratio': (8, 4, 2, 1),#R
+    'heads':           (1, 2, 5, 8),#N
+    'ff_expansion':     (8, 8, 4, 4),#E
+    'num_layers':       (2, 2, 2, 2),#L
+    'channels': 4,#input channels
+    'num_classes': FOLDER_PATH[fp],
+    'stage_kernel_stride_pad': [(7, 4, 3), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1)],
     'decoder_dim': 256,
     'num_classes': FOLDER_PATH[fp],
 
@@ -55,7 +58,7 @@ def main():
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     pretrain = None
-    name = "Segwithcarbon_3l_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = "Segwithcarbon_4l_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
