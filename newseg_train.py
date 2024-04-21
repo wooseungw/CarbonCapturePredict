@@ -28,37 +28,39 @@ def main():
     
     model_name = "Segwithcarbon"
     args = {
-    'dims':             (64, 128, 320, 512),#C
-    'decoder_dim': 512,
-    'reduction_ratio': (8, 4, 2, 1),#R
-    'heads':           (1, 2, 5, 8),#N
-    'ff_expansion':     (8, 8, 4, 4),#E
-    'num_layers':       (2, 2, 2, 2),#L
-    'channels': 4,#input channels
-    'num_classes': FOLDER_PATH[fp],
-    'stage_kernel_stride_pad': [(4, 2, 1), 
-                                   (3, 2, 1), 
-                                   (3, 2, 1), 
-                                   (3, 2, 1)],
-    'decoder_dim': 512,
-    'num_classes': FOLDER_PATH[fp],
-
+        #C
+        'dims':             (128, 256),
+        'decoder_dim': 256,
+        #R
+        'reduction_ratio': (8,2),
+        #N
+        'heads':           (2, 8),
+        #E
+        'ff_expansion':     (8, 4),
+        #L
+        'num_layers':       (2, 2),
+        #input channels
+        'channels': 4,
+        'stage_kernel_stride_pad': [(4, 2, 1), 
+                                    (4, 2, 1), 
+    ],
+        'num_classes': FOLDER_PATH[fp],
     }
     label_size = 256
     label_transform = transforms.Compose([
         transforms.Resize((label_size, label_size)),  # 라벨 크기 조정
     ])
-    
+    dim_len = len(args['dims'])
     epochs = 300
     lr = 1e-4
     device = select_device()
-    batch_size = 2
+    batch_size = 4
     cls_lambda = 1
-    reg_lambda = 0.005
+    reg_lambda = 0.0005
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     pretrain = None
-    name = "Segwithcarbon_4l_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = f"Segwithcarbon_{dim_len}l_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
