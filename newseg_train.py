@@ -109,7 +109,7 @@ def main():
     loss = CarbonLoss(num_classes=FOLDER_PATH[fp],cls_lambda=cls_lambda,reg_lambda=reg_lambda).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
-    glob_val_loss = 999999999
+    glob_val_loss = 9e15
     for epoch in (range(epochs)):
         model.train()
         for x, carbon, gt in tqdm(train_loader, desc=f"Training Epoch {epoch+1}"):
