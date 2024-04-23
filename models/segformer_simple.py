@@ -333,18 +333,23 @@ class Segwithcarbon(nn.Module):
         )
 
         self.to_fused = nn.ModuleList([nn.Sequential(
-            nn.Upsample(scale_factor=2 ** (i+1)),
+            nn.Upsample(scale_factor=2 ** (i)),
             nn.Conv2d(dim, decoder_dim, 1),
             
         ) for i, dim in enumerate(dims)])
 
-        self.to_segmentation = nn.Sequential(
+        self.segmentation_head = nn.Sequential(
             nn.Conv2d(dim_len * decoder_dim, decoder_dim, 1),
             nn.Conv2d(decoder_dim, num_classes, 1),
         )
-        self.to_regression = nn.Sequential(
+        self.regression_head = nn.Sequential(
             nn.Conv2d(dim_len * decoder_dim,decoder_dim, 1),
-            nn.Conv2d(decoder_dim, 1, 1),
+            nn.ReLU(),
+            nn.Conv2d(decoder_dim,decoder_dim, 1),
+            nn.ReLU(),
+            nn.Conv2d(decoder_dim,decoder_dim//2, 1),
+            nn.ReLU(),
+            nn.Conv2d(decoder_dim//2, 1, 1),
         )
 
     def forward(self, x):
@@ -352,8 +357,8 @@ class Segwithcarbon(nn.Module):
 
         fused = [to_fused(output) for output, to_fused in zip(layer_outputs, self.to_fused)]
         fused = torch.cat(fused, dim=1)
-        gt_preds = self.to_segmentation(fused)
-        carbon_preds = self.to_regression(fused)
+        gt_preds = self.segmentation_head(fused)
+        carbon_preds = self.regression_head(fused)
         return gt_preds, carbon_preds
     
 

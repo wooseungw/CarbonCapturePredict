@@ -28,25 +28,26 @@ def main():
     
     model_name = "Segwithcarbon"
     args = {
-        #C
-        'dims':             (128, 256),
-        'decoder_dim': 256,
-        #R
-        'reduction_ratio': (8,2),
-        #N
-        'heads':           (2, 8),
-        #E
-        'ff_expansion':     (8, 4),
-        #L
-        'num_layers':       (2, 2),
-        #input channels
-        'channels': 4,
-        'stage_kernel_stride_pad': [(4, 2, 1), 
-                                    (4, 2, 1), 
-    ],
+    #C
+    'dims':             (64, 128, 320, 512),
+    'decoder_dim': 512,
+    #R
+    'reduction_ratio': (8, 4, 2, 1),
+    #N
+    'heads':           (1, 2, 5, 8),
+    #E
+    'ff_expansion':     (8, 8, 4, 4),
+    #L
+    'num_layers':       (2, 2, 2, 2),
+    'channels': 4,#input channels
+    'num_classes': FOLDER_PATH[fp],
+    'stage_kernel_stride_pad': [(4, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1), 
+                                   (3, 2, 1)],
         'num_classes': FOLDER_PATH[fp],
     }
-    label_size = 256
+    label_size = 256 // 2
     label_transform = transforms.Compose([
         transforms.Resize((label_size, label_size)),  # 라벨 크기 조정
     ])
@@ -109,7 +110,7 @@ def main():
     # 손실 함수 및 옵티마이저 정의
     #gt_criterion = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (FOLDER_PATH[fp]-1), dtype=torch.float)).to(device)
     loss = CarbonLoss(num_classes=FOLDER_PATH[fp],cls_lambda=cls_lambda,reg_lambda=reg_lambda).to(device)
-    optimizer = optim.AdamW(model.parameters(), lr=lr)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     # 학습
     glob_val_loss = 9e15
     for epoch in (range(epochs)):
