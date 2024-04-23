@@ -24,7 +24,7 @@ def main():
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
     
-    fp = "Dataset/Training/image/AP25_City_IMAGE"
+    fp = "Dataset/Training/image/AP25_Forest_IMAGE"
     
     model_name = "Segwithcarbon"
     args = {
