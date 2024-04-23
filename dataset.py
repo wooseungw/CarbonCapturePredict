@@ -142,7 +142,7 @@ class CarbonDataset(Dataset):
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image_sh , carbon , gt
+        return image, sh , carbon , gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
@@ -153,7 +153,7 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'Dataset/Training/image/SN10_Forest_IMAGE'
+    folder_path = 'Dataset/Training/image/AP25_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     transform_label = transforms.Compose([transforms.Resize((256//2, 256//2))])
     # Create an instance of the CustomImageDataset class
@@ -164,31 +164,47 @@ if __name__ == "__main__":
     sample_index = 0
     # Iterate over the dataset and print the images and labels
     for image, sh, carbon, gt in dataloader:
-        
         # image
         print("Image:", image.shape, image.type())
         print(image.min(), image.max())
         print(image)
-        plt.subplot(1, 3, 1)
+        plt.subplot(2, 2, 1)
         plt.imshow(image.squeeze().permute(1, 2, 0))
-        plt.title("Sample Image")
+        plt.title("Image")
+        plt.xticks([])
+        plt.yticks([])
+        
+        #sh
+        print("SH:", sh.shape, sh.type())
+        print(sh.min(), sh.max())
+        print(sh)
+        plt.subplot(2, 2, 2)
+        plt.imshow(sh.squeeze(), cmap='gray')
+        plt.title("SH")
+        plt.xticks([])
+        plt.yticks([])
         
         # carbon
-        print(carbon.shape, carbon.type())
+        print("Carbon:", carbon.shape, carbon.type())
         print(carbon.min(), carbon.max())
         print(carbon)
-        plt.subplot(1, 3, 2)
+        plt.subplot(2, 2, 3)
         plt.imshow(carbon.squeeze(), cmap='gray')
-        plt.title("Sample Carbon")
+        plt.title("Carbon")
+        plt.xticks([])
+        plt.yticks([])
         
         # gt
         print("GT:", gt.shape, gt.type())
         print(gt.min(), gt.max())
         print(carbon.shape)
         print(gt)
-        plt.subplot(1, 3, 3)
+        plt.subplot(2, 2, 4)
         plt.imshow(gt.squeeze(), cmap='gray')
-        plt.title("Sample GT")
+        plt.title("GT")
+        plt.xticks([])
+        plt.yticks([])
+        
         
         plt.show()
 

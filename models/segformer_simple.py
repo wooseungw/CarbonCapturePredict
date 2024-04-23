@@ -344,12 +344,7 @@ class Segwithcarbon(nn.Module):
         )
         self.regression_head = nn.Sequential(
             nn.Conv2d(dim_len * decoder_dim,decoder_dim, 1),
-            nn.ReLU(),
-            nn.Conv2d(decoder_dim,decoder_dim, 1),
-            nn.ReLU(),
-            nn.Conv2d(decoder_dim,decoder_dim//2, 1),
-            nn.ReLU(),
-            nn.Conv2d(decoder_dim//2, 1, 1),
+            nn.Conv2d(decoder_dim, 1, 1),
         )
 
     def forward(self, x):
@@ -362,7 +357,7 @@ class Segwithcarbon(nn.Module):
         return gt_preds, carbon_preds
     
 
-'''
+''' 
 데이터 흐름
 입력 이미지는 MiT 모듈을 통해 여러 스테이지에 걸쳐 처리됩니다. 각 스테이지는 이미지를 더 작은 패치로 나누고, 이 패치들을 임베딩하여 Transformer 레이어에 입력합니다.
 Transformer 레이어는 이미지의 글로벌한 컨텍스트를 모델링하며, 각 스테이지의 출력은 다음 스테이지의 입력으로 사용됩니다.

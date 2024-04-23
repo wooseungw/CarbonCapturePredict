@@ -7,8 +7,14 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from .evaluate import corr, r_square, corr_wZero, r_square_wZero
 from .util import batch_miou
 
+class DANNLoss(nn.Module):
+    def __init__(self, cls_lambda=1, reg_lambda=0.0005, num_classes = 4) -> None:
+        super().__init__()
+        self.carbon_loss = CarbonLoss(cls_lambda = cls_lambda, reg_lambda = reg_lambda,num_classes =num_classes)
+        self.domain_loss = nn.BCELoss()
+
 class CarbonLoss(nn.Module):
-    def __init__(self, weight=None, size_average=True, cls_lambda=1, reg_lambda=0.0005, num_classes = 4,ignore_label=255):
+    def __init__(self, cls_lambda=1, reg_lambda=0.0005, num_classes = 4):
         super().__init__()
         self.mse = nn.MSELoss(reduction="sum")
         self.ce = nn.CrossEntropyLoss(torch.tensor([0.] + [1.] * (num_classes-1), dtype=torch.float))
