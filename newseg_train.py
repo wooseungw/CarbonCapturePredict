@@ -24,7 +24,7 @@ def main():
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
     
-    fp = "Dataset/Training/image/SN10_Forest_IMAGE"
+    fp = "Dataset/Training/image/AP25_City_IMAGE"
     
     model_name = "Segwithcarbon"
     args = {
@@ -61,7 +61,7 @@ def main():
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     pretrain = None
-    name = f"Segwithcarbon_{dim_len}l_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = f"Segwithcarbon_{dim_len}l_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}_reg_change"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
