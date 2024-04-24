@@ -22,7 +22,8 @@ class CarbonLoss(nn.Module):
         self.reg_lambda = reg_lambda
         self.num_classes = num_classes
     def forward(self, input_cls, target_cls, input_reg , target_reg):
-                
+        
+        target_cls = target_cls.long()
         cls_loss = self.ce(input_cls, target_cls)
         _, input_cls = torch.max(input_cls, dim=1)
         miou = batch_miou(input_cls, target_cls, self.num_classes, torch.device("cpu"))

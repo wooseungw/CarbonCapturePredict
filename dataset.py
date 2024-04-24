@@ -146,14 +146,15 @@ class CarbonDataset(Dataset):
             carbon = self.label_transform(carbon)
             gt = self.label_transform(gt)
             
-        gt = torch.tensor(np.array(gt), dtype=torch.long)
+        gt = torch.tensor(np.array(gt), dtype=torch.float32).unsqueeze(0)
 
-        carbon = torch.tensor(np.array(carbon), dtype=torch.float32)
+        carbon = torch.tensor(np.array(carbon), dtype=torch.float32).unsqueeze(0)
         
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
         return image_sh , carbon , gt
+  
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))

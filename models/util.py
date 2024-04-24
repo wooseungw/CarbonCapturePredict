@@ -4,6 +4,20 @@ import numpy as np
 import torch
 import numpy as np
 from sklearn.metrics import r2_score
+from torch import nn
+
+def mix_patch(batch,random_index,dataset_num=2,kernel_size=4):
+    w = batch.size(2)
+    h = batch.size(3)
+    unfold = nn.Unfold(kernel_size=kernel_size, stride=kernel_size)
+    batch = unfold(batch)
+    new = batch[:dataset_num]
+    for i in range(batch.size(0)//dataset_num):
+        
+        for j in random_index:
+            new[i, :, j] = batch[i+batch.size(0)//dataset_num, :, j]
+    fold = nn.Fold(output_size=(w, h), kernel_size=kernel_size, stride=kernel_size)
+    return fold(new)
 
 def select_device():
     if torch.cuda.is_available():
