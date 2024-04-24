@@ -20,54 +20,65 @@ class Mapping():
     def __init__(self, folder_path):
         if "AP10_City" in folder_path:
             self.label_name = "AP10_City"
-            self.label_mapping={0:   0,                      
-                                110: 1,
-                                120: 2,
-                                130: 3,
-                                140: 4,
-                                210: 5,
-                                220: 6,
-                                230: 7, 
-                                190: 8,
-                                255: 0}
+            # self.label_mapping={0:   0,                      
+            #                     110: 1,
+            #                     120: 2,
+            #                     130: 3,
+            #                     140: 4,
+            #                     210: 5,
+            #                     220: 6,
+            #                     230: 7, 
+            #                     190: 8,
+            #                     255: 0}
         if "AP25_City" in folder_path:
             self.label_name = "AP25_City"
-            self.label_mapping={0:   0,                      
-                                110: 1,
-                                120: 2,
-                                130: 3,
-                                140: 4,
-                                210: 5,
-                                220: 6,
-                                230: 7, 
-                                190: 8,
-                                255: 0}
+            # self.label_mapping={0:   0,                      
+            #                     110: 1,
+            #                     120: 2,
+            #                     130: 3,
+            #                     140: 4,
+            #                     210: 5,
+            #                     220: 6,
+            #                     230: 7, 
+            #                     190: 8,
+            #                     255: 0}
         if "AP10_Forest" in folder_path:
             self.label_name = "AP10_Forest"
-            self.label_mapping={0:  0,                      
-                                110: 1,
-                                120: 2,
-                                130: 3,
-                                140: 4,
-                                150: 5,
-                                190: 6, 
-                                255: 0}
+            # self.label_mapping={0:  0,                      
+            #                     110: 1,
+            #                     120: 2,
+            #                     130: 3,
+            #                     140: 4,
+            #                     150: 5,
+            #                     190: 6, 
+            #                     255: 0}
         if "AP25_Forest" in folder_path:
             self.label_name = "AP25_Forest"
-            self.label_mapping={0: 0,                      
-                                110:1,
-                                120:2,
-                                130:3,
-                                140: 4,
-                                150: 5,
-                                190: 6, 
-                                255: 0}
+            # self.label_mapping={0: 0,                      
+            #                     110:1,
+            #                     120:2,
+            #                     130:3,
+            #                     140: 4,
+            #                     150: 5,
+            #                     190: 6, 
+            #                     255: 0}
         if "SN10_Forest" in folder_path:
             self.label_name = "SN10_Forest"
-            self.label_mapping={0:  0,                      
-                                140: 1,
-                                150: 2,
-                                190: 3, 
+            # self.label_mapping={0:  0,                      
+            #                     140: 1,
+            #                     150: 2,
+            #                     190: 3, 
+            #                     255: 0}
+        self.label_mapping={0:   0,                      
+                                110: 1,
+                                120: 1,
+                                130: 1,
+                                140: 2,
+                                150: 1,
+                                210: 2,
+                                220: 3,
+                                230: 3, 
+                                190: 3,
                                 255: 0}
     def __call__(self, img):
         return self.gt_mapping(img)
@@ -142,7 +153,7 @@ class CarbonDataset(Dataset):
         # Concatenate image and sh along the channel dimension
         image_sh = torch.cat((image, sh), dim=0)
 
-        return image, sh , carbon , gt
+        return image_sh , carbon , gt
 # 시각화 코드 예시
 def imshow(tensor, title=None):
     image = tensor.numpy().transpose((1, 2, 0))
@@ -153,7 +164,7 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'Dataset/Training/image/AP25_Forest_IMAGE'
+    folder_path = 'Dataset/Training/image/AP10_Forest_IMAGE'
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     transform_label = transforms.Compose([transforms.Resize((256//2, 256//2))])
     # Create an instance of the CustomImageDataset class

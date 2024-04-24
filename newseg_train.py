@@ -17,10 +17,10 @@ import os
 def main():
     
     FOLDER_PATH={
-    'Dataset/Training/image/AP10_Forest_IMAGE':7,
-    'Dataset/Training/image/AP25_Forest_IMAGE':7,   
-    'Dataset/Training/image/AP10_City_IMAGE':9,
-    'Dataset/Training/image/AP25_City_IMAGE':9,
+    'Dataset/Training/image/AP10_Forest_IMAGE':4,
+    'Dataset/Training/image/AP25_Forest_IMAGE':4,   
+    'Dataset/Training/image/AP10_City_IMAGE':4,
+    'Dataset/Training/image/AP25_City_IMAGE':4,
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
     
@@ -38,7 +38,7 @@ def main():
     #E
     'ff_expansion':     (8, 8, 4, 4),
     #L
-    'num_layers':       (2, 2, 2, 2),
+    'num_layers':       (3, 2, 2, 2),
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
     'stage_kernel_stride_pad': [(4, 2, 1), 

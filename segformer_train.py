@@ -38,7 +38,7 @@ def main():
     #E
     'ff_expansion':     (8, 8, 4, 4),
     #L
-    'num_layers':       (2, 2, 2, 2),
+    'num_layers':       (3, 3, 8, 3),
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
     'stage_kernel_stride_pad': [(4, 2, 1), 
@@ -111,7 +111,7 @@ def main():
     loss = CarbonLoss(num_classes=FOLDER_PATH[fp],cls_lambda=cls_lambda,reg_lambda=reg_lambda).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     # 학습
-    glob_val_loss = 999999999
+    glob_val_loss = 9e14
     for epoch in (range(epochs)):
         model.train()
         for x, carbon, gt in tqdm(train_loader, desc=f"Training Epoch {epoch+1}"):
