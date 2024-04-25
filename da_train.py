@@ -17,15 +17,15 @@ import os
 def main():
     
     FOLDER_PATH={
-    'Dataset/Training/image/AP10_Forest_IMAGE':7,
-    'Dataset/Training/image/AP25_Forest_IMAGE':7,   
-    'Dataset/Training/image/AP10_City_IMAGE':9,
-    'Dataset/Training/image/AP25_City_IMAGE':9,
+    'Dataset/Training/image/AP10_Forest_IMAGE':4,
+    'Dataset/Training/image/AP25_Forest_IMAGE':4,   
+    'Dataset/Training/image/AP10_City_IMAGE':4,
+    'Dataset/Training/image/AP25_City_IMAGE':4,
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
     
-    fp = "Dataset/Training/image/AP25_Forest_IMAGE"
-    target_fp = "Dataset/Training/image/SN10_Forest_IMAGE"
+    fp = "Dataset/Training/image/AP10_Forest_IMAGE"
+    target_fp = "Dataset/Training/image/AP10_City_IMAGE"
     label_size = 256 // 2
     args = {
     #C
@@ -38,27 +38,27 @@ def main():
     #E
     'ff_expansion':     (8, 8, 4, 4),
     #L
-    'num_layers':       (2, 2, 2, 2),
+    'num_layers':       (3, 3, 8, 3),
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
     'stage_kernel_stride_pad': [(4, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1)],
-        'num_classes': FOLDER_PATH[fp],
+
     }
 
-    epochs = 300
+    epochs = 5
     lr = 1e-4
     device = select_device()
-    batch_size = 1
+    batch_size = 2
     cls_lambda = 1
     reg_lambda = 0.0005
     source_dataset_name = fp.split("/")[-1]
     target_dataset_name = target_fp.split("/")[-1]
-    model_name = "Segwithcarbon"
+    model_name = "Segformerwithcarbon"
     checkpoint_path = f"checkpoints/{model_name}/Domain_Apdaptation"
-    name = f"DA_{model_name}"+source_dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = f"DA_B3_{model_name}"+source_dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     pretrain = None
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
@@ -104,13 +104,13 @@ def main():
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
     val_dataset = CarbonDataset(fp, image_transform,sh_transform, label_transform,mode="Valid")
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=10,pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=10,pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
     
     target_dataset = CarbonDataset(target_fp, image_transform, sh_transform, label_transform,mode="Train")
-    target_loader = DataLoader(target_dataset, batch_size=batch_size, shuffle=True,num_workers=10,pin_memory=True)
+    target_loader = DataLoader(target_dataset, batch_size=batch_size, shuffle=True,pin_memory=True)
     target_val_dataset = CarbonDataset(target_fp, image_transform,sh_transform, label_transform,mode="Valid")
-    target_val_loader = DataLoader(target_val_dataset, batch_size=batch_size, shuffle=False,num_workers=10,pin_memory=True)
+    target_val_loader = DataLoader(target_val_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
      
     # 모델 생성
     if model_name == "Segwithcarbon":
@@ -119,6 +119,9 @@ def main():
         model = Segformerwithcarbon(**args)
     if pretrain != None:
         model.load_state_dict(torch.load(pretrain), strict=False)
+    for name, param in model.named_parameters():
+        if 'to_segmentation' not in name and 'to_regression' not in name:
+            param.requires_grad = False
     model.to(device)
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
@@ -133,22 +136,23 @@ def main():
             assert gt.min() >= 0 and gt.max() < FOLDER_PATH[fp], "라벨 값이 유효한 범위를 벗어났습니다."
 
             x = torch.cat((x, x_t), dim=0)
-            random_index = torch.randint(1, x.size(2), (x.size(2)//2,))
-            new = mix_patch(x, random_index, dataset_num=2, kernel_size=16)
-            x = torch.cat((x,new),dim=0).to(device)
-
+            #random_index = torch.randint(1, x.size(2), (x.size(2)//2,))
+            #new = mix_patch(x, random_index, dataset_num=2, kernel_size=16)
+            #x = torch.cat((x,new),dim=0)
+            x = x.to(device)
             
             carbon = torch.cat((carbon, carbon_t), dim=0)
-            new = mix_patch(carbon,random_index,dataset_num=2,kernel_size=16)
-            carbon = torch.cat((carbon,new),dim=0)
-            carbon = resizer(carbon).to(device)
-
+            #new = mix_patch(carbon,random_index,dataset_num=2,kernel_size=16)
+            #carbon = torch.cat((carbon,new),dim=0)
+            carbon = resizer(carbon)
+            carbon = carbon.to(device)
             
             gt = torch.cat((gt, gt_t), dim=0)
-            new = mix_patch(gt,random_index,dataset_num=2,kernel_size=16)
-            gt = torch.cat((gt,new),dim=0)
-            gt = resizer(gt).to(device)
-
+            #new = mix_patch(gt,random_index,dataset_num=2,kernel_size=16)
+            #gt = torch.cat((gt,new),dim=0)
+            gt = resizer(gt)
+            gt = gt.to(device)
+            
             new = None
             
             optimizer.zero_grad()
