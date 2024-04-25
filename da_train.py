@@ -48,7 +48,7 @@ def main():
 
     }
 
-    epochs = 5
+    epochs = 200
     lr = 1e-4
     device = select_device()
     batch_size = 2
@@ -129,7 +129,7 @@ def main():
     loss = CarbonLoss(num_classes=FOLDER_PATH[fp],cls_lambda=cls_lambda,reg_lambda=reg_lambda).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     # 학습
-    glob_val_loss = 9e15
+    glob_val_loss = 9e20
     for epoch in (range(epochs)):
         model.train()
         train_total_loss = 0.0
@@ -188,7 +188,7 @@ def main():
         avg_train_miou = train_total_miou / train_batches
 
         print(f"Epoch {epoch+1}, Train Loss: {avg_train_loss:.4f}, Train cls_loss: {avg_train_cls_loss:.4f}, Train reg_loss: {avg_train_reg_loss:.4f}, Train acc_c: {avg_train_acc_c:.4f}, Train acc_r: {avg_train_acc_r:.4f} , Train miou: {avg_train_miou:.4f}")
-        wandb.log({"Train Loss":avg_train_loss.item(), "Train cls_loss":avg_train_cls_loss.item(), "Train reg_loss":avg_train_reg_loss.item(), "Train acc_c":avg_train_acc_c, "Train acc_r":avg_train_acc_r, "Train miou":avg_train_miou})
+        wandb.log({"Train Loss":avg_train_loss, "Train cls_loss":avg_train_cls_loss, "Train reg_loss":avg_train_reg_loss, "Train acc_c":avg_train_acc_c, "Train acc_r":avg_train_acc_r, "Train miou":avg_train_miou})
         model.eval()
         total_loss = 0.0
         total_cls_loss = 0.0
@@ -228,8 +228,8 @@ def main():
             torch.save(model.state_dict(), f"{checkpoint_path}/{name}_best.pth")
 
 
-        print(f"Validation Loss: {avg_loss:.4f}, Validation cls_loss: {avg_cls_loss.item():.4f}, Validation reg_loss: {avg_reg_loss.item():.4f}, Validation acc_c: {avg_acc_c:.4f}, Validation acc_r: {avg_acc_r:.4f}, Validation miou: {avg_miou:.4f}")
-        wandb.log({"Validation Loss":avg_loss, "Validation cls_loss":avg_cls_loss.item(), "Validation reg_loss":avg_reg_loss.item(), "Validation acc_c":avg_acc_c, "Validation acc_r":avg_acc_r , "Validation miou":avg_miou})
+        print(f"Validation Loss: {avg_loss:.4f}, Validation cls_loss: {avg_cls_loss:.4f}, Validation reg_loss: {avg_reg_loss:.4f}, Validation acc_c: {avg_acc_c:.4f}, Validation acc_r: {avg_acc_r:.4f}, Validation miou: {avg_miou:.4f}")
+        wandb.log({"Validation Loss":avg_loss, "Validation cls_loss":avg_cls_loss, "Validation reg_loss":avg_reg_loss, "Validation acc_c":avg_acc_c, "Validation acc_r":avg_acc_r , "Validation miou":avg_miou})
         wandb.log({"Epoch":epoch+1})
     torch.save(model.state_dict(), f"{checkpoint_path}/{name}_last_{epoch+1}.pth")
     wandb.finish()
