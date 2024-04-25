@@ -132,6 +132,13 @@ def main():
     glob_val_loss = 9e15
     for epoch in (range(epochs)):
         model.train()
+        train_total_loss = 0.0
+        train_total_cls_loss = 0.0
+        train_total_reg_loss = 0.0
+        train_total_acc_c = 0.0
+        train_total_acc_r = 0.0
+        train_total_miou = 0.0
+        train_batches = 0
         for (x, carbon, gt) ,(x_t,carbon_t,gt_t)in tqdm(zip(train_loader,target_loader), desc=f"Training Epoch {epoch+1}"):
             assert gt.min() >= 0 and gt.max() < FOLDER_PATH[fp], "라벨 값이 유효한 범위를 벗어났습니다."
 
@@ -163,11 +170,33 @@ def main():
             
             total_loss.backward()
             optimizer.step()
+            # 훈련 손실 및 정확도 누적
+            train_total_loss += total_loss.item()
+            train_total_cls_loss += cls_loss.item()
+            train_total_reg_loss += reg_loss.item()
+            train_total_acc_c += acc_c
+            train_total_acc_r += acc_r
+            train_total_miou += miou
+            train_batches += 1
+        
+        # 훈련 손실과 정확도 평균 계산
+        avg_train_loss = train_total_loss / train_batches
+        avg_train_cls_loss = train_total_cls_loss / train_batches
+        avg_train_reg_loss = train_total_reg_loss / train_batches
+        avg_train_acc_c = train_total_acc_c / train_batches
+        avg_train_acc_r = train_total_acc_r / train_batches
+        avg_train_miou = train_total_miou / train_batches
 
-        print(f"Epoch {epoch+1}, Train Loss: {total_loss.item():.4f}, Train cls_loss: {cls_loss.item():.4f}, Train reg_loss: {reg_loss.item():.4f}, Train acc_c: {acc_c:.4f}, Train acc_r: {acc_r:.4f} , Train miou: {miou:.4f}")
-        wandb.log({"Train Loss":total_loss.item(), "Train cls_loss":cls_loss.item(), "Train reg_loss":reg_loss.item(), "Train acc_c":acc_c, "Train acc_r":acc_r, "Train miou":miou})
-        val_total_loss = 0
+        print(f"Epoch {epoch+1}, Train Loss: {avg_train_loss:.4f}, Train cls_loss: {avg_train_cls_loss:.4f}, Train reg_loss: {avg_train_reg_loss:.4f}, Train acc_c: {avg_train_acc_c:.4f}, Train acc_r: {avg_train_acc_r:.4f} , Train miou: {avg_train_miou:.4f}")
+        wandb.log({"Train Loss":avg_train_loss.item(), "Train cls_loss":avg_train_cls_loss.item(), "Train reg_loss":avg_train_reg_loss.item(), "Train acc_c":avg_train_acc_c, "Train acc_r":avg_train_acc_r, "Train miou":avg_train_miou})
         model.eval()
+        total_loss = 0.0
+        total_cls_loss = 0.0
+        total_reg_loss = 0.0
+        total_acc_c = 0.0
+        total_acc_r = 0.0
+        total_miou = 0.0
+        total_batches = 0
         for  (x, carbon, gt) ,(x_t,carbon_t,gt_t) in tqdm(zip(val_loader,target_val_loader), desc=f"Validation Epoch {epoch+1}"):
             #x = torch.cat((image, sh), dim=0)
             x = torch.cat((x, x_t), dim=0).to(device)
@@ -178,14 +207,29 @@ def main():
             total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
             #total_loss = gt_criterion(gt_pred, gt.squeeze(1))
             
-            val_total_loss += total_loss.item()
-        val_total_loss /= (len(val_loader)+len(target_val_loader))  # 평균 검증 손실 계산
-        if val_total_loss < glob_val_loss:
-            glob_val_loss = val_total_loss
+            # 전체 손실 및 정확도 누적
+            total_loss += total_loss.item()
+            total_cls_loss += cls_loss.item()
+            total_reg_loss += reg_loss.item()
+            total_acc_c += acc_c
+            total_acc_r += acc_r
+            total_miou += miou
+            total_batches += 1
+
+        # 전체 평균 손실과 정확도 계산
+        avg_loss = total_loss / total_batches
+        avg_cls_loss = total_cls_loss / total_batches
+        avg_reg_loss = total_reg_loss / total_batches
+        avg_acc_c = total_acc_c / total_batches
+        avg_acc_r = total_acc_r / total_batches
+        avg_miou = total_miou / total_batches
+        if avg_loss < glob_val_loss:
+            glob_val_loss = avg_loss
             torch.save(model.state_dict(), f"{checkpoint_path}/{name}_best.pth")
 
-        print(f"Validation Loss: {val_total_loss:.4f}, Validation cls_loss: {cls_loss.item():.4f}, Validation reg_loss: {reg_loss.item():.4f}, Validation acc_c: {acc_c:.4f}, Validation acc_r: {acc_r:.4f}, Validation miou: {miou:.4f}")
-        wandb.log({"Validation Loss":val_total_loss, "Validation cls_loss":cls_loss.item(), "Validation reg_loss":reg_loss.item(), "Validation acc_c":acc_c, "Validation acc_r":acc_r , "Validation miou":miou})
+
+        print(f"Validation Loss: {avg_loss:.4f}, Validation cls_loss: {avg_cls_loss.item():.4f}, Validation reg_loss: {avg_reg_loss.item():.4f}, Validation acc_c: {avg_acc_c:.4f}, Validation acc_r: {avg_acc_r:.4f}, Validation miou: {avg_miou:.4f}")
+        wandb.log({"Validation Loss":avg_loss, "Validation cls_loss":avg_cls_loss.item(), "Validation reg_loss":avg_reg_loss.item(), "Validation acc_c":avg_acc_c, "Validation acc_r":avg_acc_r , "Validation miou":avg_miou})
         wandb.log({"Epoch":epoch+1})
     torch.save(model.state_dict(), f"{checkpoint_path}/{name}_last_{epoch+1}.pth")
     wandb.finish()
