@@ -51,9 +51,9 @@ def main():
     epochs = 200
     lr = 1e-4
     device = select_device()
-    batch_size = 2
+    batch_size = 1
     cls_lambda = 1
-    reg_lambda = 0.0005
+    reg_lambda = 0.005
     source_dataset_name = fp.split("/")[-1]
     target_dataset_name = target_fp.split("/")[-1]
     model_name = "Segformerwithcarbon"
@@ -104,13 +104,13 @@ def main():
     # 데이터셋 및 데이터 로더 생성
     train_dataset = CarbonDataset(fp, image_transform, sh_transform, label_transform,mode="Train")
     val_dataset = CarbonDataset(fp, image_transform,sh_transform, label_transform,mode="Valid")
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     
     target_dataset = CarbonDataset(target_fp, image_transform, sh_transform, label_transform,mode="Train")
-    target_loader = DataLoader(target_dataset, batch_size=batch_size, shuffle=True,pin_memory=True)
+    target_loader = DataLoader(target_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     target_val_dataset = CarbonDataset(target_fp, image_transform,sh_transform, label_transform,mode="Valid")
-    target_val_loader = DataLoader(target_val_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
+    target_val_loader = DataLoader(target_val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
      
     # 모델 생성
     if model_name == "Segwithcarbon":
@@ -119,9 +119,6 @@ def main():
         model = Segformerwithcarbon(**args)
     if pretrain != None:
         model.load_state_dict(torch.load(pretrain), strict=False)
-    for name, param in model.named_parameters():
-        if 'to_segmentation' not in name and 'to_regression' not in name:
-            param.requires_grad = False
     model.to(device)
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
