@@ -8,7 +8,7 @@ from tqdm import tqdm
 import wandb
 
 from models.segformer_simple import Segwithcarbon, Segformerwithcarbon
-from dataset import CarbonDataset
+from dataset import CarbonDataset, CombinedCarbonDataset
 from models.util import select_device, mix_patch
 from models.metrics import CarbonLoss
 
@@ -17,7 +17,7 @@ def initialize_wandb(name, config, args):
     wandb.init(project="CCP", name=name, config=config)
     wandb.config.update(args)
 
-def get_data_loaders(fp, target_fp, batch_size, label_size):
+def get_data_loaders(fps, batch_size, label_size):
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
@@ -31,19 +31,16 @@ def get_data_loaders(fp, target_fp, batch_size, label_size):
         transforms.Resize((label_size, label_size))
     ])
 
-    train_dataset = CarbonDataset(fp, transform, transform, label_transform, mode="Train")
-    val_dataset = CarbonDataset(fp, transform, transform, label_transform, mode="Valid")
+    train_dataset = CombinedCarbonDataset(fps, transform, transform, label_transform, mode="Train")
+    val_dataset = CombinedCarbonDataset(fps, transform, transform, label_transform, mode="Valid")
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     
-    target_dataset = CarbonDataset(target_fp, transform, transform, label_transform, mode="Train")
-    target_loader = DataLoader(target_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-    target_val_dataset = CarbonDataset(target_fp, transform, transform, label_transform, mode="Valid")
-    target_val_loader = DataLoader(target_val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    
 
-    return train_loader, val_loader, target_loader, target_val_loader, resizer
+    return train_loader, val_loader, resizer
 
-def train_one_epoch(model, train_loader, target_loader, optimizer, loss_fn, device, resizer):
+def train_one_epoch(model, train_loader, optimizer, loss_fn, device, resizer):
     model.train()
     train_total_loss = 0.0
     train_total_cls_loss = 0.0
@@ -53,12 +50,12 @@ def train_one_epoch(model, train_loader, target_loader, optimizer, loss_fn, devi
     train_total_miou = 0.0
     train_batches = 0
     
-    for (x, carbon, gt), (x_t, carbon_t, gt_t) in tqdm(zip(train_loader, target_loader), desc="Training"):
+    for x, carbon, gt in tqdm(train_loader, desc="Training"):
         assert gt.min() >= 0 and gt.max() < 5, "라벨 값이 유효한 범위를 벗어났습니다."
 
-        x = torch.cat((x, x_t), dim=0).to(device)
-        carbon = resizer(torch.cat((carbon, carbon_t), dim=0)).to(device)
-        gt = resizer(torch.cat((gt, gt_t), dim=0)).to(device)
+        x = x.to(device)
+        carbon = resizer(carbon).to(device)
+        gt = resizer(gt).to(device)
 
         optimizer.zero_grad()
         gt_pred, carbon_pred = model(x)
@@ -83,7 +80,7 @@ def train_one_epoch(model, train_loader, target_loader, optimizer, loss_fn, devi
 
     return avg_train_loss, avg_train_cls_loss, avg_train_reg_loss, avg_train_acc_c, avg_train_acc_r, avg_train_miou
 
-def validate_one_epoch(model, val_loader, target_val_loader, loss_fn, device, resizer):
+def validate_one_epoch(model, val_loader, loss_fn, device, resizer):
     model.eval()
     total_loss = 0.0
     total_cls_loss = 0.0
@@ -94,11 +91,10 @@ def validate_one_epoch(model, val_loader, target_val_loader, loss_fn, device, re
     total_batches = 0
 
     with torch.no_grad():
-        for (x, carbon, gt), (x_t, carbon_t, gt_t) in tqdm(zip(val_loader, target_val_loader), desc="Validation"):
-            x = torch.cat((x, x_t), dim=0).to(device)
-            carbon = resizer(torch.cat((carbon, carbon_t), dim=0)).to(device)
-            gt = resizer(torch.cat((gt, gt_t), dim=0)).to(device)
-            
+        for x, carbon, gt in tqdm(val_loader, desc="Training"):
+            x = x.to(device)
+            carbon = resizer(carbon).to(device)
+            gt = resizer(gt).to(device)
             gt_pred, carbon_pred = model(x)
             loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss_fn(gt_pred, gt.squeeze(1), carbon_pred, carbon)
             
@@ -128,8 +124,9 @@ def main():
         'Dataset/Training/image/SN10_Forest_IMAGE': 4,
     }
 
-    fp = "Dataset/Training/image/AP25_Forest_IMAGE"
-    target_fp = "Dataset/Training/image/AP25_City_IMAGE"
+    fps = ["Dataset/Training/image/AP25_Forest_IMAGE",
+           "Dataset/Training/image/AP25_City_IMAGE"]
+    
     label_size = 256 // 2
     args = {
         'dims': (32, 64, 160, 256),
@@ -139,7 +136,7 @@ def main():
         'ff_expansion': (8, 8, 4, 4),
         'num_layers': (2, 2, 2, 2),
         'channels': 4,  # input channels
-        'num_classes': FOLDER_PATH[fp],
+        'num_classes': FOLDER_PATH[fps[0]],
         'stage_kernel_stride_pad': [
             (4, 2, 1), 
             (3, 2, 1), 
@@ -154,11 +151,10 @@ def main():
     batch_size = 4
     cls_lambda = 1
     reg_lambda = 0.005
-    source_dataset_name = fp.split("/")[-1]
-    target_dataset_name = target_fp.split("/")[-1]
+    dataset_name = fps[0].split("/")[-1]
     model_name = "Segformerwithcarbon"
     checkpoint_path = f"checkpoints/{model_name}/Domain_Apdaptation"
-    name = f"DA_B0_{model_name}_{source_dataset_name.replace('_IMAGE', '')}_{label_size}"
+    name = f"DA_B0_{model_name}_{dataset_name.replace('_IMAGE', '')}_{label_size}"
     pretrain = None
 
     os.makedirs(checkpoint_path, exist_ok=True)
@@ -175,7 +171,7 @@ def main():
         "pretrain": pretrain,
     }, args)
 
-    train_loader, val_loader, target_loader, target_val_loader, resizer = get_data_loaders(fp, target_fp, batch_size, label_size)
+    train_loader, val_loader,resizer = get_data_loaders(fps, batch_size, label_size)
 
     if model_name == "Segwithcarbon":
         model = Segwithcarbon(**args)
@@ -188,19 +184,19 @@ def main():
         model.load_state_dict(torch.load(pretrain), strict=False)
 
     model.to(device)
-    loss_fn = CarbonLoss(num_classes=FOLDER_PATH[fp], cls_lambda=cls_lambda, reg_lambda=reg_lambda).to(device)
+    loss_fn = CarbonLoss(num_classes=FOLDER_PATH[fps[0]], cls_lambda=cls_lambda, reg_lambda=reg_lambda).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
 
     glob_val_loss = float('inf')
 
     for epoch in range(epochs):
         avg_train_loss, avg_train_cls_loss, avg_train_reg_loss, avg_train_acc_c, avg_train_acc_r, avg_train_miou = train_one_epoch(
-            model, train_loader, target_loader, optimizer, loss_fn, device, resizer)
+            model, train_loader, optimizer, loss_fn, device, resizer)
 
         print(f"Epoch {epoch+1}, Train Loss: {avg_train_loss:.4f}, Train cls_loss: {avg_train_cls_loss:.4f}, Train reg_loss: {avg_train_reg_loss:.4f}")
         print(f"Train carbon Acc: {avg_train_acc_c:.4f}, Train roughness Acc: {avg_train_acc_r:.4f}, Train mIoU: {avg_train_miou:.4f}")
         avg_val_loss, avg_val_cls_loss, avg_val_reg_loss, avg_val_acc_c, avg_val_acc_r, avg_val_miou = validate_one_epoch(
-            model, val_loader, target_val_loader, loss_fn, device, resizer)
+            model, val_loader, loss_fn, device, resizer)
 
         print(f"Epoch {epoch+1}, Val Loss: {avg_val_loss:.4f}, Val cls_loss: {avg_val_cls_loss:.4f}, Val reg_loss: {avg_val_reg_loss:.4f}")
         print(f"Val carbon Acc: {avg_val_acc_c:.4f}, Val roughness Acc: {avg_val_acc_r:.4f}, Val mIoU: {avg_val_miou:.4f}")
