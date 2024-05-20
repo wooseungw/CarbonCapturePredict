@@ -24,13 +24,13 @@ def main():
     'Dataset/Training/image/SN10_Forest_IMAGE':4,
     }
     
-    fp = "Dataset/Training/image/AP10_Forest_IMAGE"
-    target_fp = "Dataset/Training/image/AP10_City_IMAGE"
+    fp = "Dataset/Training/image/AP25_Forest_IMAGE"
+    target_fp = "Dataset/Training/image/AP25_City_IMAGE"
     label_size = 256 // 2
     args = {
     #C
-    'dims':             (64, 128, 320, 512),
-    'decoder_dim': 512,
+    'dims':             (32,64 , 160, 256),
+    'decoder_dim': 256,
     #R
     'reduction_ratio': (8, 4, 2, 1),
     #N
@@ -38,10 +38,10 @@ def main():
     #E
     'ff_expansion':     (8, 8, 4, 4),
     #L
-    'num_layers':       (3, 3, 8, 3),
+    'num_layers':       (2, 2, 2, 2),
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
-    'stage_kernel_stride_pad': [(4, 2, 1), 
+    'stage_kernel_stride_pad': [(4,2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1)],
@@ -51,14 +51,14 @@ def main():
     epochs = 200
     lr = 1e-4
     device = select_device()
-    batch_size = 1
+    batch_size = 8
     cls_lambda = 1
     reg_lambda = 0.005
     source_dataset_name = fp.split("/")[-1]
     target_dataset_name = target_fp.split("/")[-1]
     model_name = "Segformerwithcarbon"
     checkpoint_path = f"checkpoints/{model_name}/Domain_Apdaptation"
-    name = f"DA_B3_{model_name}"+source_dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = f"DA_B0_{model_name}"+source_dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     pretrain = None
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
@@ -94,7 +94,7 @@ def main():
     ])
 
     label_transform = transforms.Compose([
-        transforms.Resize((256, 256)), 
+        transforms.Resize((256//2, 256//2)), 
     ])
 
     resizer = transforms.Compose([
@@ -118,7 +118,7 @@ def main():
     if model_name == "Segformerwithcarbon":
         model = Segformerwithcarbon(**args)
     if pretrain != None:
-        model.load_state_dict(torch.load(pretrain), strict=False)
+        model.load_state_dict(torch.load(pretrain, map_location=torch.device('cpu')), strict=False)
     model.to(device)
     #model = UNet_carbon(FOLDER_PATH[fp],dropout=True).to(device)
     # 손실 함수 및 옵티마이저 정의
@@ -136,30 +136,52 @@ def main():
         train_total_acc_r = 0.0
         train_total_miou = 0.0
         train_batches = 0
-        for (x, carbon, gt) ,(x_t,carbon_t,gt_t)in tqdm(zip(train_loader,target_loader), desc=f"Training Epoch {epoch+1}"):
+        #Forest
+        for x, carbon, gt in tqdm(train_loader, desc=f"Training Forest Epoch {epoch+1}"):
+            optimizer.zero_grad()
+            x = x.to(device)
+            carbon = carbon.to(device)
+            gt = gt.to(device)
+            
+            gt_pred, carbon_pred  = model(x)
+            
+            total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+            
+            total_loss.backward()
+            optimizer.step()
+            # 훈련 손실 및 정확도 누적
+            train_total_loss += total_loss.item()
+            train_total_cls_loss += cls_loss.item()
+            train_total_reg_loss += reg_loss.item()
+            train_total_acc_c += acc_c
+            train_total_acc_r += acc_r
+            train_total_miou += miou
+            train_batches += 1
+        #City
+        for x, carbon, gt in tqdm(target_loader, desc=f"Training City Epoch {epoch+1}"):
             assert gt.min() >= 0 and gt.max() < FOLDER_PATH[fp], "라벨 값이 유효한 범위를 벗어났습니다."
-
-            x = torch.cat((x, x_t), dim=0)
-            #random_index = torch.randint(1, x.size(2), (x.size(2)//2,))
-            #new = mix_patch(x, random_index, dataset_num=2, kernel_size=16)
-            #x = torch.cat((x,new),dim=0)
+            optimizer.zero_grad()
+            #x = torch.cat((x, x_t), dim=0)
+            # random_index = torch.randint(1, x.size(2), (x.size(2)//2,))
+            # new = mix_patch(x, random_index, dataset_num=2, kernel_size=16)
+            # x = torch.cat((x,new),dim=0)
             x = x.to(device)
             
-            carbon = torch.cat((carbon, carbon_t), dim=0)
-            #new = mix_patch(carbon,random_index,dataset_num=2,kernel_size=16)
-            #carbon = torch.cat((carbon,new),dim=0)
-            carbon = resizer(carbon)
+            #carbon = torch.cat((carbon, carbon_t), dim=0)
+            # new = mix_patch(carbon,random_index,dataset_num=2,kernel_size=16)
+            # carbon = torch.cat((carbon,new),dim=0)
+            # carbon = resizer(carbon)
             carbon = carbon.to(device)
             
-            gt = torch.cat((gt, gt_t), dim=0)
-            #new = mix_patch(gt,random_index,dataset_num=2,kernel_size=16)
-            #gt = torch.cat((gt,new),dim=0)
-            gt = resizer(gt)
+            #gt = torch.cat((gt, gt_t), dim=0)
+            # new = mix_patch(gt,random_index,dataset_num=2,kernel_size=16)
+            # gt = torch.cat((gt,new),dim=0)
+            # gt = resizer(gt)
             gt = gt.to(device)
             
             new = None
             
-            optimizer.zero_grad()
+            
             gt_pred, carbon_pred  = model(x)
             #print(gt_pred.shape, gt_pred.type, gt.squeeze(1).shape, carbon_pred.shape, carbon.shape)
             total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
@@ -194,16 +216,16 @@ def main():
         total_acc_r = 0.0
         total_miou = 0.0
         total_batches = 0
-        for  (x, carbon, gt) ,(x_t,carbon_t,gt_t) in tqdm(zip(val_loader,target_val_loader), desc=f"Validation Epoch {epoch+1}"):
-            #x = torch.cat((image, sh), dim=0)
-            x = torch.cat((x, x_t), dim=0).to(device)
-            carbon = resizer(torch.cat((carbon, carbon_t), dim=0)).to(device)
-            gt = resizer(torch.cat((gt, gt_t), dim=0)).to(device)
+        
+        for x, carbon, gt in tqdm(val_loader, desc=f"Validation Forest Epoch {epoch+1}"):
+            x = x.to(device)
+            carbon = carbon.to(device)
+            gt = gt.to(device)
             
             gt_pred, carbon_pred  = model(x)
-            total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
-            #total_loss = gt_criterion(gt_pred, gt.squeeze(1))
             
+            total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+
             # 전체 손실 및 정확도 누적
             total_loss += total_loss.item()
             total_cls_loss += cls_loss.item()
@@ -212,6 +234,45 @@ def main():
             total_acc_r += acc_r
             total_miou += miou
             total_batches += 1
+            
+        for x, carbon, gt in tqdm(target_val_loader, desc=f"Validation City Epoch {epoch+1}"):
+            x = x.to(device)
+            carbon = carbon.to(device)
+            gt = gt.to(device)
+            
+            gt_pred, carbon_pred  = model(x)
+            
+            total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+
+            # 전체 손실 및 정확도 누적
+            total_loss += total_loss.item()
+            total_cls_loss += cls_loss.item()
+            total_reg_loss += reg_loss.item()
+            total_acc_c += acc_c
+            total_acc_r += acc_r
+            total_miou += miou
+            total_batches += 1
+            
+        # for  (x, carbon, gt) ,(x_t,carbon_t,gt_t) in tqdm(zip(val_loader,target_val_loader), desc=f"Validation Epoch {epoch+1}"):
+        #     #x = torch.cat((image, sh), dim=0)
+        #     x = torch.cat((x, x_t), dim=0).to(device)
+        #     carbon = torch.cat((carbon, carbon_t), dim=0).to(device)
+        #     gt = torch.cat((gt, gt_t), dim=0).to(device)
+        #     # carbon = resizer(torch.cat((carbon, carbon_t), dim=0)).to(device)
+        #     # gt = resizer(torch.cat((gt, gt_t), dim=0)).to(device)
+            
+        #     gt_pred, carbon_pred  = model(x)
+        #     total_loss, cls_loss, reg_loss, acc_c, acc_r, miou = loss(gt_pred, gt.squeeze(1), carbon_pred, carbon)
+        #     #total_loss = gt_criterion(gt_pred, gt.squeeze(1))
+            
+        #     # 전체 손실 및 정확도 누적
+        #     total_loss += total_loss.item()
+        #     total_cls_loss += cls_loss.item()
+        #     total_reg_loss += reg_loss.item()
+        #     total_acc_c += acc_c
+        #     total_acc_r += acc_r
+        #     total_miou += miou
+        #     total_batches += 1
 
         # 전체 평균 손실과 정확도 계산
         avg_loss = total_loss / total_batches

@@ -29,8 +29,8 @@ def main():
     model_name = "Segformerwithcarbon"
     args = {
     #C
-    'dims':             (64, 128, 320, 512),
-    'decoder_dim': 512,
+    'dims':             (32, 64, 160, 256),
+    'decoder_dim': 256,
     #R
     'reduction_ratio': (8, 4, 2, 1),
     #N
@@ -38,15 +38,17 @@ def main():
     #E
     'ff_expansion':     (8, 8, 4, 4),
     #L
-    'num_layers':       (3, 3, 8, 3),
+    'num_layers':       (2, 2, 2, 2),
     'channels': 4,#input channels
     'num_classes': FOLDER_PATH[fp],
-    'stage_kernel_stride_pad': [(4, 2, 1), 
+    'stage_kernel_stride_pad': [(7, 4, 3), 
                                    (3, 2, 1), 
                                    (3, 2, 1), 
                                    (3, 2, 1)],
+        'num_classes': FOLDER_PATH[fp],
     }
-    label_size = 256//2
+
+    label_size = 256//4
     label_transform = transforms.Compose([
         transforms.Resize((label_size, label_size)),  # 라벨 크기 조정
     ])
@@ -60,7 +62,7 @@ def main():
     dataset_name = fp.split("/")[-1]
     checkpoint_path = f"checkpoints/{model_name}/{dataset_name}"
     pretrain = "checkpoints\Segformerwithcarbon\AP25_Forest_IMAGE\Segformer_B1_AP25_128_pretrain_best_model.pth"
-    name = "Segformer_B1_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
+    name = "Segformer_B0_"+dataset_name.replace("_IMAGE", "")+f"_{label_size}"
     # Create the directory if it doesn't exist
     os.makedirs(checkpoint_path, exist_ok=True)
     wandb.login()
