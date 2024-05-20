@@ -52,7 +52,7 @@ def train_one_epoch(model, train_loader, target_loader, optimizer, loss_fn, devi
     train_total_acc_r = 0.0
     train_total_miou = 0.0
     train_batches = 0
-
+    
     for (x, carbon, gt), (x_t, carbon_t, gt_t) in tqdm(zip(train_loader, target_loader), desc="Training"):
         assert gt.min() >= 0 and gt.max() < 5, "라벨 값이 유효한 범위를 벗어났습니다."
 
@@ -132,12 +132,12 @@ def main():
     target_fp = "Dataset/Training/image/AP25_City_IMAGE"
     label_size = 256 // 2
     args = {
-        'dims': (64, 128, 320, 512),
-        'decoder_dim': 512,
+        'dims': (32, 64, 160, 256),
+        'decoder_dim': 256,
         'reduction_ratio': (8, 4, 2, 1),
         'heads': (1, 2, 5, 8),
         'ff_expansion': (8, 8, 4, 4),
-        'num_layers': (3, 3, 8, 3),
+        'num_layers': (2, 2, 2, 2),
         'channels': 4,  # input channels
         'num_classes': FOLDER_PATH[fp],
         'stage_kernel_stride_pad': [
@@ -151,14 +151,14 @@ def main():
     epochs = 200
     lr = 1e-4
     device = select_device()
-    batch_size = 1
+    batch_size = 4
     cls_lambda = 1
     reg_lambda = 0.005
     source_dataset_name = fp.split("/")[-1]
     target_dataset_name = target_fp.split("/")[-1]
     model_name = "Segformerwithcarbon"
     checkpoint_path = f"checkpoints/{model_name}/Domain_Apdaptation"
-    name = f"DA_B3_{model_name}_{source_dataset_name.replace('_IMAGE', '')}_{label_size}"
+    name = f"DA_B0_{model_name}_{source_dataset_name.replace('_IMAGE', '')}_{label_size}"
     pretrain = None
 
     os.makedirs(checkpoint_path, exist_ok=True)
@@ -227,3 +227,6 @@ def main():
 
     torch.save(model.state_dict(), f"{checkpoint_path}/{name}_last_{epoch+1}.pth")
     wandb.finish()
+    
+if __name__ == "__main__":
+    main()

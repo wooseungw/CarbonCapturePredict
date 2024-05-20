@@ -283,6 +283,7 @@ def main():
         avg_miou = total_miou / total_batches
         if avg_loss < glob_val_loss:
             glob_val_loss = avg_loss
+            
             torch.save(model.state_dict(), f"{checkpoint_path}/{name}_best.pth")
 
 

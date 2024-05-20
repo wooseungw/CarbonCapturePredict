@@ -154,6 +154,65 @@ class CarbonDataset(Dataset):
         image_sh = torch.cat((image, sh), dim=0)
 
         return image_sh , carbon , gt
+
+class CombinedCarbonDataset(Dataset):
+    def __init__(self, folder_paths, image_transform=None, sh_transform=None, label_transform=None, mode="Train"):
+        if mode == "Valid":
+            mode = "Validation"
+        else:
+            mode = "Training"
+        
+        self.image_paths = []
+        self.sh_paths = []
+        self.carbon_paths = []
+        self.gt_paths = []
+        
+        for folder_path in folder_paths:
+            folder_path = folder_path.replace("Training", mode)
+            self.image_paths += get_image_paths(folder_path)
+            self.sh_paths += get_image_paths(folder_path.replace("IMAGE", "SH"))
+            folder_path_label = folder_path.replace("image", "label")
+            self.carbon_paths += get_image_paths(folder_path_label.replace("IMAGE", "Carbon"))
+            self.gt_paths += get_image_paths(folder_path_label.replace("IMAGE", "GT"))
+        
+        self.image_transform = image_transform
+        self.sh_transform = sh_transform
+        self.label_transform = label_transform
+        self.Mapping = Mapping(folder_path_label)
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        image_path = self.image_paths[idx]
+        image = Image.open(image_path).convert('RGB')
+        
+        sh_path = self.sh_paths[idx]
+        sh = Image.open(sh_path).convert('L')
+        
+        carbon_path = self.carbon_paths[idx]
+        carbon = Image.open(carbon_path)
+        
+        gt_paths = self.gt_paths[idx]
+        gt = Image.open(gt_paths).convert('L')
+        gt = self.Mapping(gt)
+        
+        if self.image_transform:
+            image = self.image_transform(image)
+            
+        if self.sh_transform:
+            sh = self.sh_transform(sh)
+            
+        if self.label_transform:
+            carbon = self.label_transform(carbon)
+            gt = self.label_transform(gt)
+            
+        gt = torch.tensor(np.array(gt), dtype=torch.float32).unsqueeze(0)
+        carbon = torch.tensor(np.array(carbon), dtype=torch.float32).unsqueeze(0)
+        
+        image_sh = torch.cat((image, sh), dim=0)
+
+        return image_sh, carbon, gt
   
 # 시각화 코드 예시
 def imshow(tensor, title=None):
@@ -165,12 +224,14 @@ def imshow(tensor, title=None):
 
 if __name__ == "__main__":
     # Set the folder path for the dataset
-    folder_path = 'Dataset/Training/image/AP10_Forest_IMAGE'
+    folder_paths = ['Dataset/Training/image/AP25_Forest_IMAGE','Dataset/Training/image/AP25_City_IMAGE']
     transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     transform_label = transforms.Compose([transforms.Resize((256//2, 256//2))])
     # Create an instance of the CustomImageDataset class
-    dataset = CarbonDataset(folder_path,transform,transform,transform_label, mode = "Valid")
-
+    dataset = CombinedCarbonDataset(folder_paths, transform, transform, transform_label, mode="Train")  
+    print(len(dataset))
+  
+  
     # Create a data loader for the dataset
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     sample_index = 0
