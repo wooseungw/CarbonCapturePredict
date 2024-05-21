@@ -129,7 +129,7 @@ def main():
     
     label_size = 256 // 2
     args = {
-        'dims': (32, 64, 160, 256),
+        'dims': (64, 128, 320, 512),
         'decoder_dim': 256,
         'reduction_ratio': (8, 4, 2, 1),
         'heads': (1, 2, 5, 8),
@@ -154,7 +154,7 @@ def main():
     dataset_name = fps[0].split("/")[-1]
     model_name = "Segformerwithcarbon"
     checkpoint_path = f"checkpoints/{model_name}/Domain_Apdaptation"
-    name = f"DA_B0_{model_name}_{dataset_name.replace('_IMAGE', '')}_{label_size}"
+    name = f"DA_B1_{model_name}_{dataset_name.replace('_IMAGE', '')}_{label_size}"
     pretrain = None
 
     os.makedirs(checkpoint_path, exist_ok=True)
@@ -163,7 +163,7 @@ def main():
         "learning_rate": lr,
         "batch_size": batch_size,
         "epochs": epochs,
-        "fp": fp,
+        "fps": fps,
         "model_name": model_name,
         "cls_lambda": cls_lambda,
         "reg_lambda": reg_lambda,
@@ -218,7 +218,7 @@ def main():
 
         if avg_val_loss < glob_val_loss:
             glob_val_loss = avg_val_loss
-            torch.save(model.state_dict(), f"{checkpoint_path}/best_model.pt")
+            torch.save(model.state_dict(), f"{checkpoint_path}/{name}_best_model.pth")
             print(f"Best model saved with val loss: {avg_val_loss:.4f}")
 
     torch.save(model.state_dict(), f"{checkpoint_path}/{name}_last_{epoch+1}.pth")
